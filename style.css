@@ -293,3 +293,9 @@ a {
   right: 10px; 
   z-index: 9999;
 }
+
+/* BIM Grid */
+
+#bimGrid {
+  gap: 0;
+}
