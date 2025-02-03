@@ -4,21 +4,10 @@ import * as BUI from "@thatopen/ui"
 
 import { IUser, User } from "../class/User";
 import { UsersManager } from "../class/UsersManager";
-import { SearchBox } from "./SearchBox";
 import { CreateUserForm } from "./CreateUserForm";
-import { UserCard } from "./UserCard";
 import { firebaseDB, getCollection } from "../firebase"
 
-
 //Using the grid of the TOE UI Components. We need to declare it first in order to make it understandable as HTML
-declare global {
-    namespace JSX {
-        interface IntrinsicElements {
-            "bim-grid": any
-        }
-    }
-}
-
 
 interface Props {
     usersManager: UsersManager
@@ -120,7 +109,7 @@ export function UsersPage(props: Props) {
     //Panel for the BIM Table
     const content = BUI.Component.create<BUI.Panel>(() => {
         return BUI.html`
-            <bim-panel>
+            <bim-panel style="gap: 8px;">
                 <bim-panel-section label="Users">
                     ${userTable}
                 </bim-panel-section>
@@ -128,32 +117,46 @@ export function UsersPage(props: Props) {
             `
     })
 
-    //Sidebar with the buttons for uploading, downloading and adding new users
+    //Header with the buttons for uploading, downloading and adding new users. And with the search bar
 
     const header = BUI.Component.create<BUI.Component>(() => {
-        return BUI.html
+
+        const inputBox = BUI.Component.create<BUI.TextInput>(() => {
+            return BUI.html`
+              <bim-text-input placeholder="Search Users"></bim-text-input>
             `
-        <div style="padding: 4px; display: flex; gap: 8px;">
-            <bim-button icon="line-md:arrow-align-bottom"
-                @click=${() => {
-                props.usersManager.exportToJSON()
-            }}>
+        })
+        inputBox.addEventListener("input", () => {
+            userTable.queryString = inputBox.value
+        })
 
-            </bim-button>
+        return BUI.html`
+            <div style="padding: 4px; display: flex; gap: 8px; height: fit-content; justify-content: space-between; ">
+                <div style="width: 500px">
+                ${inputBox}
+                </div>
+            <div style="display: flex; flex-direction: row; gap: 10px;">                
+                <bim-button icon="line-md:arrow-align-bottom"
+                            @click=${() => {
+                        props.usersManager.exportToJSON()
+                    }}>
 
-            <bim-button icon="line-md:arrow-align-top"
-                @click=${() => {
-                props.usersManager.importFromJSON()
-            }}>
+                        </bim-button>
 
-            </bim-button>
+                        <bim-button icon="line-md:arrow-align-top"
+                            @click=${() => {
+                        props.usersManager.importFromJSON()
+                    }}>
 
-            <bim-button icon="line-md:account-add"
-                @click=${() => {
-                onNewUserClick()
-            }}>
-            </bim-button>
-        </div>
+                        </bim-button>
+
+                        <bim-button icon="line-md:account-add"
+                            @click=${() => {
+                        onNewUserClick()
+                    }}>
+                        </bim-button>
+                </div>
+            </div>
         `
     })
 
@@ -172,7 +175,6 @@ export function UsersPage(props: Props) {
 
                 footer: (() => {
                     const footer = document.createElement("div")
-                    footer.style.backgroundColor = "#4ad3a7"
                     footer.style.border = "none"
                     return footer
 
@@ -184,7 +186,6 @@ export function UsersPage(props: Props) {
 
     //Creating the grid itself
     React.useEffect(() => {
-        BUI.Manager.init()
         const grid = document.getElementById("bimGrid") as BUI.Grid
         grid.layouts = gridLayout
         grid.layout = "primary"

@@ -1,6 +1,7 @@
 import * as React from "react"
 import * as ReactDOM from "react-dom/client"
 import * as Router from "react-router-dom"
+import * as BUI from "@thatopen/ui"
 
 //Components
 import { Sidebar } from "./react-components/Sidebar"
@@ -9,6 +10,20 @@ import { ProjectsManager } from "./class/ProjectsManager"
 import { ProjectDetailsPage } from "./react-components/ProjectDetailsPage"
 import { UsersPage } from "./react-components/UsersPage"
 import { UsersManager } from "./class/UsersManager"
+
+//BIM UI
+
+BUI.Manager.init()
+
+
+declare global {
+    namespace JSX {
+        interface IntrinsicElements {
+            "bim-grid": any
+        }
+    }
+}
+
 
 //Insert the components in the page
 const rootElement = document.getElementById("app") as HTMLDivElement
