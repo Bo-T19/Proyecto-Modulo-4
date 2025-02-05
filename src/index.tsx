@@ -19,7 +19,8 @@ BUI.Manager.init()
 declare global {
     namespace JSX {
         interface IntrinsicElements {
-            "bim-grid": any
+            "bim-grid": any;
+            "bim-viewport": any;
         }
     }
 }

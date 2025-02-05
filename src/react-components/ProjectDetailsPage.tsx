@@ -103,11 +103,11 @@ export function ProjectDetailsPage(props: Props) {
 
     const navigateTo = Router.useNavigate()
     props.projectsManager.onProjectDeleted = async (id) => {
-        await deleteDocument("/projects", id )
+        await deleteDocument("/projects", id)
         navigateTo("/")
     }
 
-    
+
     return (
         <div className="page" id="project-details" >
             <header>
@@ -134,13 +134,9 @@ export function ProjectDetailsPage(props: Props) {
                     <ProjectSummary project={project} projectsManager={props.projectsManager} onOpenForm={onEditProjectClick} />
                     <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} />
                 </div>
-                <div
-                    id="viewer-container"
-                    style={{  flex: 1, overflow: "hidden" }}
-                    className="dashboard-card"
-                >
-                    <IFCViewer />
-                </div>
+
+                <IFCViewer />
+
             </div>
         </div>
     )
