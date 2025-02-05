@@ -1,5 +1,5 @@
 import * as React from "react";
-
+import * as BUI from "@thatopen/ui"
 
 import { Project } from "../class/Project";
 import { ToDoItem } from "./ToDoItem";
@@ -14,6 +14,11 @@ interface Props {
 }
 
 export function ToDoList(props: Props) {
+
+    //References
+    const todoContainer = React.useRef<HTMLDivElement>(null)
+    const toDoSectionHeader = React.useRef<HTMLDivElement>(null)
+
     //States
     const [toDosList, setToDosList] = React.useState<ToDo[]>(props.project.toDosManager.toDosList);
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
@@ -32,10 +37,8 @@ export function ToDoList(props: Props) {
     }
 
     // Update the todos list
-
     const toDoItems = toDosList.map((toDo) => {
         return (
-
             <ToDoItem toDo={toDo} key={toDo.id} onOpenEditForm={props.onOpenEditForm} sendId={handleIdFromItem} />
         )
     })
@@ -48,6 +51,47 @@ export function ToDoList(props: Props) {
         })
         setToDosList(filteredProjects)
     }
+
+    //BIM Table for tasks
+    const tasksTable = BUI.Component.create<BUI.Table>(() => {
+        return BUI.html`
+        <bim-table style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
+      `
+    })
+
+    //SearchBox
+    const inputBox = BUI.Component.create<BUI.TextInput>(() => {
+        return BUI.html`
+              <bim-text-input placeholder="Search tasks"></bim-text-input>
+            `
+    })
+    inputBox.addEventListener("input", () => {
+        tasksTable.queryString = inputBox.value
+    })
+
+    //Effects
+    React.useEffect(() => {
+        todoContainer.current?.appendChild(tasksTable)
+        toDoSectionHeader.current?.appendChild(inputBox)
+    }, [])
+
+
+    React.useEffect(() => {
+        // Effect used everytime the users state changes
+        const formattedData = toDosList.map(toDo => ({
+            data: {
+                Name: toDo.description,
+                Status: toDo.status,
+                Date: toDo.date.toDateString(),
+            }
+        }));
+
+        const table = document.querySelector("bim-table");
+        if (table) {
+            table.data = formattedData;
+        }
+
+    }, [toDosList]);
 
 
     return (
@@ -75,12 +119,9 @@ export function ToDoList(props: Props) {
                 >
                     <div
                         style={{ display: "flex", alignItems: "center", columnGap: 10 }}
+                        ref={toDoSectionHeader}
                     >
                         <span className="material-icons-round">search</span>
-                        <SearchBox
-                            onChange={(value) => onToDoSearch(value)}
-                            typeOfSearchBox="task"
-                        />
                     </div>
                     <span id="add-todo" className="material-icons-round" onClick={props.onOpenNewForm}>
                         add
@@ -98,7 +139,7 @@ export function ToDoList(props: Props) {
                     height: "auto"
                 }}
             >
-                {props.project.toDosManager.toDosList.length > 0 ? <div id="todos-list">{toDoItems}</div> : <p> There are no tasks</p>}
+                {props.project.toDosManager.toDosList.length > 0 ? <div id="todos-list" ref={todoContainer} ></div> : <p> There are no tasks</p>}
 
             </div>
         </div>

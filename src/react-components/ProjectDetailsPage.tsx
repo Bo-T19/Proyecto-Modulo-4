@@ -7,7 +7,7 @@ import { EditProjectForm } from "./EditProjectForm";
 import { ToDoList } from "./ToDoList";
 import { NewToDoForm } from "./NewToDoForm";
 import { EditToDoForm } from "./EditToDoForm"
-import { ThreeViewer } from "./ThreeViewer";
+import { IFCViewer } from "./IFCViewer";
 import { deleteDocument } from "../firebase";
 
 interface Props {
@@ -139,7 +139,7 @@ export function ProjectDetailsPage(props: Props) {
                     style={{  flex: 1, overflow: "hidden" }}
                     className="dashboard-card"
                 >
-                    <ThreeViewer />
+                    <IFCViewer />
                 </div>
             </div>
         </div>
