@@ -26,17 +26,33 @@ export function IFCViewer() {
         const viewerContainer = document.getElementById("viewer-container") as HTMLElement
         const rendererComponent = new OBC.SimpleRenderer(components, viewerContainer)
         world.renderer = rendererComponent
+       
 
         const cameraComponent = new OBC.OrthoPerspectiveCamera(components)
         world.camera = cameraComponent
-        const material = new THREE.MeshLambertMaterial({ color: "#6528D7" })
-        const geometry = new THREE.BoxGeometry()
-        const cube = new THREE.Mesh(geometry, material)
-        world.scene.three.add(cube)
+        world.scene.three.background = new THREE.Color(220, 220, 215);
 
-        world.camera.controls.setLookAt(3,3,3,0,0,0)
+
         cameraComponent.updateAspect()
         components.init()
+
+
+        //IFC Loader. First we get from components the IfcLoader
+        const ifcLoader = components.get(OBC.IfcLoader)
+        ifcLoader.setup()//We need to start the Loader
+    
+        //Then the fragmentsManager. Then, add the funcionality for onFragmentsLoaded
+        //A fragment is a THREEJS representation of an IFC
+        const fragmentsManager = components.get(OBC.FragmentsManager)
+        fragmentsManager.onFragmentsLoaded.add((model) => {
+          world.scene.three.add(model)
+        })
+        
+        
+        //Important, whenever there are changes in the size of the app
+        viewerContainer.addEventListener("resize", () => {
+          rendererComponent.resize()
+          cameraComponent.updateAspect()})
     }
 
     //Setting the grid and the tool bar for the buttons
