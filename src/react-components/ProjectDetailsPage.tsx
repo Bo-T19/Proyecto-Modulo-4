@@ -135,7 +135,7 @@ export function ProjectDetailsPage(props: Props) {
                     <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} />
                 </div>
 
-                <IFCViewer />
+                <IFCViewer projectName={project.name} />
 
             </div>
         </div>
