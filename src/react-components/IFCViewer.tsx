@@ -61,14 +61,14 @@ export function IFCViewer(props: Props) {
       const blob = new Blob([fragmentBinary])
       const filePath = props.project.name + "/" + model.name + ".frag"
       uploadFile(filePath, blob)
-      props.projectsManager.editModelDictionary(props.project, model.name, "shown")
+      props.projectsManager.editModelDictionary(props.project, model.name, "Shown")
       console.log("fragmentLoaded")
 
     })
 
     for (const [key, value] of Object.entries(props.project.modelDictionary)) {
 
-      if (value === "shown") {
+      if (value === "Shown") {
         const binary = await downloadFile(props.project.name + "/" + key + ".frag")
         if (!(binary instanceof ArrayBuffer)) return
         const fragmentBinary = new Uint8Array(binary)

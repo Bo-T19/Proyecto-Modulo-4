@@ -1,7 +1,7 @@
 //Create the ProjectStatus and the ProjectType types
 export type ProjectStatus = "Pending" | "Active" | "Finished"
 export type ProjectType = "Infrastructure" | "Housing" | "Private sector"
-export type ModelVisibility = "hidden"|"shown"
+export type ModelVisibility = "Hidden"|"Shown"
 import { v4 as uuidv4 } from 'uuid'
 
 

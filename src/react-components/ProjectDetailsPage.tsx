@@ -9,6 +9,7 @@ import { NewToDoForm } from "./NewToDoForm";
 import { EditToDoForm } from "./EditToDoForm"
 import { IFCViewer } from "./IFCViewer";
 import { deleteDocument } from "../firebase";
+import { ShowModelsWindow } from "./ShowModelsWindow";
 
 interface Props {
     projectsManager: ProjectsManager
@@ -22,9 +23,10 @@ export function ProjectDetailsPage(props: Props) {
     if (!project) { return (<p> Project couldn't be found</p>) }
 
     //State for the EditProjectForm and methods for showing it, also for NewToDoForm and EditToDoForm
-    const [showEditProjectForm, setEditProjectForm] = React.useState(false);
-    const [showNewToDoForm, setNewToDoForm] = React.useState(false);
-    const [showEditToDoForm, setEditToDoForm] = React.useState(false);
+    const [showEditProjectForm, setEditProjectForm] = React.useState(false)
+    const [showNewToDoForm, setNewToDoForm] = React.useState(false)
+    const [showEditToDoForm, setEditToDoForm] = React.useState(false)
+    const [showShowModels, setShowModels] = React.useState(false)
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
 
 
@@ -92,6 +94,26 @@ export function ProjectDetailsPage(props: Props) {
         }
     }, [showEditToDoForm]);
 
+
+    //ShowModelsWindow
+    const handleCloseShowModels = () => {
+        setShowModels(false)
+    }
+
+
+    const onShowModelsClick = () => {
+        setShowModels(true)
+    }
+
+    React.useEffect(() => {
+        if (showShowModels) {
+            const modal = document.getElementById("show-models-modal");
+            if (modal && modal instanceof HTMLDialogElement) {
+                modal.showModal();
+            }
+        }
+    }, [showShowModels]);
+
     //Task Id 
 
     const setId = (id: string) => {
@@ -117,6 +139,10 @@ export function ProjectDetailsPage(props: Props) {
                         {project.description}
                     </p>
                 </div>
+
+                <button id="show-models" onClick={onShowModelsClick} className="btn-secondary">
+                    <p style={{ width: "100%" }}>Show models</p>
+                </button>
             </header>
             {showEditProjectForm ? <EditProjectForm project={project}
                 projectsManager={props.projectsManager}
@@ -128,6 +154,11 @@ export function ProjectDetailsPage(props: Props) {
                 toDosManager={project.toDosManager}
                 onCloseForm={handleCloseEditToDoForm}
                 id={activeTaskId} /> : <></>}
+            {showShowModels ? < ShowModelsWindow
+                project={project}
+                projectsManager={props.projectsManager}
+                onCloseForm={handleCloseShowModels}
+            /> : <></>}
 
             <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
                 <div style={{ display: "flex", flexDirection: "column", rowGap: 30, overflowY: "auto", height: "100%" }}>

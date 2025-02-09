@@ -30,26 +30,7 @@ export function ToDoList(props: Props) {
         setToDosList([...props.project.toDosManager.toDosList])
     }
 
-    const handleIdFromItem = (id: string) => {
-        setActiveTaskId(id)
-        props.sendId(id)
-    }
 
-    // Update the todos list
-    const toDoItems = toDosList.map((toDo) => {
-        return (
-            <ToDoItem toDo={toDo} key={toDo.id} onOpenEditForm={props.onOpenEditForm} sendId={handleIdFromItem} />
-        )
-    })
-
-
-    //For the searchbox
-    const onToDoSearch = (value: string) => {
-        const filteredProjects = props.project.toDosManager.toDosList.filter((toDo) => {
-            return toDo.description.includes(value)
-        })
-        setToDosList(filteredProjects)
-    }
 
     //BIM Table for tasks
     const tasksTable = BUI.Component.create<BUI.Table>(() => {
@@ -73,6 +54,7 @@ export function ToDoList(props: Props) {
         todoContainer.current?.appendChild(tasksTable)
         toDoSectionHeader.current?.appendChild(inputBox)
     }, [])
+
 
 
     React.useEffect(() => {
@@ -138,7 +120,7 @@ export function ToDoList(props: Props) {
                     height: "auto"
                 }}
             >
-                {props.project.toDosManager.toDosList.length > 0 ? <div id="todos-list" ref={todoContainer} ></div> : <p> There are no tasks</p>}
+                {<div id="todos-list" ref={todoContainer} ></div>}
 
             </div>
         </div>
