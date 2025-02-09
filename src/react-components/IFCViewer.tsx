@@ -3,13 +3,13 @@ import * as OBC from "@thatopen/components"
 import * as CUI from "@thatopen/ui-obc";
 import * as BUI from "@thatopen/ui"
 import * as THREE from "three"
-import { uploadFile } from "../firebase"
+import { downloadFile, uploadFile } from "../firebase"
 import { Project, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
 
 interface Props {
   project: Project,
-   projectsManager: ProjectsManager
+  projectsManager: ProjectsManager
 }
 export function IFCViewer(props: Props) {
 
@@ -17,7 +17,7 @@ export function IFCViewer(props: Props) {
   const components = new OBC.Components();
 
   //Setting the viewer
-  const setViewer = () => {
+  const setViewer = async () => {
 
     //Setting the world, which means: camera, scene, renderer, etc
     const worlds = components.get(OBC.Worlds)
@@ -52,17 +52,33 @@ export function IFCViewer(props: Props) {
     //Then the fragmentsManager. Then, add the funcionality for onFragmentsLoaded
     //A fragment is a THREEJS representation of an IFC
     const fragmentsManager = components.get(OBC.FragmentsManager)
+
     fragmentsManager.onFragmentsLoaded.add((model) => {
       world.scene.three.add(model)
       console.log(model.name)
+      if (model?.name && model.name in props.project.modelDictionary) return
       const fragmentBinary = fragmentsManager.export(model)
       const blob = new Blob([fragmentBinary])
       const filePath = props.project.name + "/" + model.name + ".frag"
       uploadFile(filePath, blob)
-      
       props.projectsManager.editModelDictionary(props.project, model.name, "shown")
-      console.log(props.project)
+      console.log("fragmentLoaded")
+
     })
+
+    for (const [key, value] of Object.entries(props.project.modelDictionary)) {
+
+      if (value === "shown") {
+        const binary = await downloadFile(props.project.name + "/" + key + ".frag")
+        if (!(binary instanceof ArrayBuffer)) return
+        const fragmentBinary = new Uint8Array(binary)
+        const fragmentsManager = components.get(OBC.FragmentsManager)
+        fragmentsManager.load(fragmentBinary)
+      }
+      rendererComponent.resize();
+      cameraComponent.updateAspect();
+    }
+
 
 
     //Important, whenever there are changes in the size of the app
@@ -104,15 +120,15 @@ export function IFCViewer(props: Props) {
       },
     }
     floatingGrid.layout = "main"
-
     viewerContainer.appendChild(floatingGrid)
   }
 
 
   //useEffect for setting it all
   React.useEffect(() => {
-    setViewer()
     setupUI()
+    setViewer()
+
     return () => {
       if (components) {
         components.dispose()

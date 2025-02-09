@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getStorage, ref, uploadBytes } from "firebase/storage";
+import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import * as Firestore from "firebase/firestore"
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -29,17 +29,19 @@ export function getCollection<T>(path: string) {
     return Firestore.collection(firebaseDB, path) as Firestore.CollectionReference<T>
 }
 
+//Function for deleting a project in the projects database
 export async function deleteDocument(path: string, id: string) {
     const doc = Firestore.doc(firebaseDB, `${path}/${id}`)
     await Firestore.deleteDoc(doc)
 }
 
-
+//Function for updating the project in the projects database
 export async function updateDocument<T extends Record<string, any>>(path: string, id: string, data: T) {
     const doc = Firestore.doc(firebaseDB, `${path}/${id}`)
     await Firestore.updateDoc(doc, data)
 }
 
+//Function for uploading the BIM Models
 export async function uploadFile(filePath: string, file: Blob) {
     try {
         const storageRef = ref(storage, filePath);
@@ -49,5 +51,21 @@ export async function uploadFile(filePath: string, file: Blob) {
     }
     catch (error) {
         console.error("An error occurred:", error);
+    }
+}
+
+//Function for downloading the BIM Models
+export async function downloadFile(filePath: string) {
+    const storageRef = ref(storage, filePath);
+    try {
+        const url = await getDownloadURL(storageRef);
+        const response = await fetch(url);
+        return await response.arrayBuffer();
+    }
+
+    catch (error) {
+        console.error("Error downloading file:", error);
+        return null;
+
     }
 }
