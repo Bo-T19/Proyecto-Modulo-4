@@ -40,7 +40,7 @@ export class Project implements IProject {
     toDosManager: ToDosManager
     color: string
     colorArray: string[] = ["#FF6F61", "#6A5ACD", "#FFB347", "#3498DB", "#27AE60", "#C0392B"]
-    
+    modelDictionaryVersion: number
 
 
     constructor(data: IProject, id =uuidv4() ) {
@@ -52,7 +52,7 @@ export class Project implements IProject {
         this.initials = this.name[0].toUpperCase() + this.name[1].toUpperCase()
         this.color = this.colorArray[ Math.floor(Math.random() * 6)]
         this.toDosManager = new ToDosManager(id)  
-
+        this.modelDictionaryVersion= 0
 
       }
 

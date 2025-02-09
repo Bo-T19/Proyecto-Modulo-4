@@ -126,15 +126,20 @@ export function IFCViewer(props: Props) {
 
   //useEffect for setting it all
   React.useEffect(() => {
+
+    components.dispose();
     setupUI()
     setViewer()
 
     return () => {
+
       if (components) {
         components.dispose()
       }
     }
-  }, [])
+  }, [props.project.modelDictionaryVersion])
+
+
 
   return (<
     bim-viewport

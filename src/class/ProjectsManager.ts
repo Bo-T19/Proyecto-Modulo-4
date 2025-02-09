@@ -116,15 +116,14 @@ export class ProjectsManager {
     }
 
     //Edit the model dictionary
-    editModelDictionary(project: Project, key: string, value: ModelVisibility) {
-        project.modelDictionary[key]=value
-
-        
-        updateDocument("/projects", project.id, {
-            modelDictionary: project.modelDictionary
-        });
+    editModelDictionary(project: Project, modelName: string, visibility: ModelVisibility) {
+        if (project.modelDictionary[modelName] !== visibility) {
+            project.modelDictionary[modelName] = visibility;
+        }
+        project.modelDictionaryVersion++
     }
-
+    
+      
     //Import a project from JSON or export a project from JSON
 
     exportToJSON(fileName: string = "projects") {
