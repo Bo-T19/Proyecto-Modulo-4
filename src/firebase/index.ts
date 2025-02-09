@@ -40,7 +40,7 @@ export async function updateDocument<T extends Record<string, any>>(path: string
     await Firestore.updateDoc(doc, data)
 }
 
-export async function uploadDocument(filePath: string, file: Blob) {
+export async function uploadFile(filePath: string, file: Blob) {
     try {
         const storageRef = ref(storage, filePath);
         await uploadBytes(storageRef, file).then((snapshot) => {

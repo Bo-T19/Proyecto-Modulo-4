@@ -1,5 +1,5 @@
 import { updateDocument } from "../firebase"
-import { IProject, Project } from "./Project"
+import { IProject, ModelVisibility, Project } from "./Project"
 import { ToDosManager } from "./ToDosManager"
 import * as Firestore from "firebase/firestore"
 import { firebaseDB, getCollection } from "../firebase"
@@ -42,24 +42,6 @@ export class ProjectsManager {
         this.onProjectCreated(project)
 
         return project
-    }
-
-    //Create a default project (this should be deleted later)
-    defaultProject() {
-        const defaultData: IProject =
-        {
-            name: "Default Project",
-            description: "A temporary project",
-            status: "Active",
-            projectType: "Private sector",
-            finishDate: new Date("2024-12-31"),
-            cost: 15000,
-            progress: 75,
-            toDosManager: { toDosList: [] }
-
-        }
-
-        this.newProject(defaultData)
     }
 
     //Get a project by name
@@ -133,6 +115,16 @@ export class ProjectsManager {
         console.log(this)
     }
 
+    //Edit the model dictionary
+    editModelDictionary(project: Project, key: string, value: ModelVisibility) {
+        project.modelDictionary[key]=value
+
+        
+        updateDocument("/projects", project.id, {
+            modelDictionary: project.modelDictionary
+        });
+    }
+
     //Import a project from JSON or export a project from JSON
 
     exportToJSON(fileName: string = "projects") {
@@ -171,8 +163,8 @@ export class ProjectsManager {
                             finishDate: new Date(project.finishDate),
                             cost: project.cost,
                             progress: project.progress,
-                            toDosManager: project.toDosManager
-
+                            toDosManager: project.toDosManager,
+                            modelDictionary: project.modelDictionary
                         }
 
                         this.editProject(this.getProjectByName(project.name)!, updateProjectData)
@@ -192,10 +184,11 @@ export class ProjectsManager {
                             finishDate: new Date(project.finishDate),
                             cost: project.cost,
                             progress: project.progress,
-                            toDosManager: project.toDosManager
+                            toDosManager: project.toDosManager,
+                            modelDictionary: project.modelDictionary
                         }
 
-                        
+
 
                         if (isNaN(newProjectData.finishDate.getDate())) {
                             newProjectData.finishDate = new Date(2024, 1, 1)

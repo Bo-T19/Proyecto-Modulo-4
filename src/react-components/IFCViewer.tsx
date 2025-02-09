@@ -3,13 +3,16 @@ import * as OBC from "@thatopen/components"
 import * as CUI from "@thatopen/ui-obc";
 import * as BUI from "@thatopen/ui"
 import * as THREE from "three"
-import * as Firestore from "firebase/firestore"
-import { uploadDocument } from "../firebase"
+import { uploadFile } from "../firebase"
+import { Project, ModelVisibility } from "../class/Project";
+import { ProjectsManager } from "../class/ProjectsManager";
 
 interface Props {
-    projectName: string
+  project: Project,
+   projectsManager: ProjectsManager
 }
 export function IFCViewer(props: Props) {
+
   //Components instance, this is like the manager of our IFCViewer
   const components = new OBC.Components();
 
@@ -54,8 +57,11 @@ export function IFCViewer(props: Props) {
       console.log(model.name)
       const fragmentBinary = fragmentsManager.export(model)
       const blob = new Blob([fragmentBinary])
-      const filePath=props.projectName+"/"+model.name+".frag"
-      uploadDocument(filePath,blob)
+      const filePath = props.project.name + "/" + model.name + ".frag"
+      uploadFile(filePath, blob)
+      
+      props.projectsManager.editModelDictionary(props.project, model.name, "shown")
+      console.log(props.project)
     })
 
 

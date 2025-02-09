@@ -1,68 +1,27 @@
 import * as React from "react";
-import * as Firestore from "firebase/firestore"
-import { firebaseDB, getCollection } from "../firebase"
-import { IProject, Project, ProjectStatus, ProjectType } from "../class/Project";
-import { ProjectsManager } from "../class/ProjectsManager";
-import { ToDosManager } from "../class/ToDosManager";
+import * as Router from "react-router-dom";
+import * as BUI from "@thatopen/ui"
 
+import { Project, IProject, ProjectStatus, ProjectType } from "../class/Project";
+import { ProjectsManager } from "../class/ProjectsManager";
 
 interface Props {
-    projectsManager: ProjectsManager;
+    project: Project
+    projectsManager: ProjectsManager
     onCloseForm: () => void;
 }
 
-export function CreateProjectForm(props: Props) {
 
-    
-    const projectsCollection = getCollection<IProject>("/projects")
-
-    const onFormSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        const projectForm = document.getElementById("new-project-form")
-        if (!(projectForm && projectForm instanceof HTMLFormElement)) { return }
-        
-        const formData = new FormData(projectForm)
-
-        const newProjectData: IProject =
-        {
-            name: formData.get("name") as string,
-            description: formData.get("description") as string,
-            status: formData.get("status") as ProjectStatus,
-            projectType: formData.get("type") as ProjectType,
-            finishDate: new Date(formData.get("date") as string),
-            cost: 0,
-            progress: 0,
-            toDosManager: { toDosList: [] },
-            modelDictionary: {}
-        }
-        try {
-            console.log(newProjectData)
-            if  (isNaN(newProjectData.finishDate.getDate()))
-            {
-                newProjectData.finishDate = new Date(2024, 1, 1)
-            }
-
-            const newProjectDataForFB = structuredClone(newProjectData)
-           
-            const docRef = await Firestore.addDoc(projectsCollection, newProjectDataForFB)
-
-            const newProject = props.projectsManager.newProject(newProjectData, docRef.id)
-
-            projectForm.reset()
-            const modal = document.getElementById("new-project-modal")
-            if (!(modal && modal instanceof HTMLDialogElement)) { return }
-            modal.close()
-            props.onCloseForm()
-        }
-        catch (error) {
-            alert(error)
-        }
-    }
+export function ShowModelsWindow(props: Props) {
 
 
+    const routeParams = Router.useParams<{ id: string }>()
+    if (!routeParams.id) { return (<p> There is no project id</p>) }
+    const project = props.projectsManager.getProject(routeParams.id)
+    if (!project) { return (<p> Project couldn't be fount</p>) }
 
     const onCancelButtonClick = () => {
-        const modal = document.getElementById("new-project-modal")
+        const modal = document.getElementById("edit-project-modal")
         if (!(modal && modal instanceof HTMLDialogElement)) { return }
         modal.close()
         props.onCloseForm()
@@ -70,9 +29,9 @@ export function CreateProjectForm(props: Props) {
 
 
     return (
-        <dialog id="new-project-modal">
-            <form onSubmit={(e) => { onFormSubmit(e) }} id="new-project-form">
-                <h2>New Project</h2>
+        <dialog id="edit-project-modal">
+            <form id="edit-project-form">
+                <h2>Edit Project</h2>
                 <div className="input-list">
                     <div className="form-field-container">
                         <label>
@@ -82,6 +41,7 @@ export function CreateProjectForm(props: Props) {
                             name="name"
                             type="text"
                             placeholder="What's the name of your project?"
+                            defaultValue={props.project.name}
                         />
                         <p
                             style={{
@@ -103,14 +63,14 @@ export function CreateProjectForm(props: Props) {
                             cols={30}
                             rows={5}
                             placeholder="Give your project a nice description! So people is jealous about it."
-                            defaultValue={""}
+                            defaultValue={props.project.description}
                         />
                     </div>
                     <div className="form-field-container">
                         <label>
                             <span className="material-icons-round">person</span>Type
                         </label>
-                        <select name="type">
+                        <select name="type" defaultValue={props.project.projectType}>
                             <option>Infrastructure</option>
                             <option>Housing</option>
                             <option>Private sector</option>
@@ -121,7 +81,7 @@ export function CreateProjectForm(props: Props) {
                             <span className="material-icons-round">not_listed_location</span>
                             Status
                         </label>
-                        <select name="status">
+                        <select name="status" defaultValue={props.project.status}>
                             <option>Pending</option>
                             <option>Active</option>
                             <option>Finished</option>
@@ -134,6 +94,30 @@ export function CreateProjectForm(props: Props) {
                         </label>
                         <input name="date" type="date" />
                     </div>
+                    <div className="form-field-container">
+                        <label>
+                            <span className="material-icons-round">attach_money</span>Cost
+                        </label>
+                        <textarea
+                            name="cost"
+                            cols={30}
+                            rows={1}
+                            placeholder="Enter just an integer number, no more."
+                            defaultValue={props.project.cost}
+                        />
+                    </div>
+                    <div className="form-field-container">
+                        <label>
+                            <span className="material-icons-round">percent</span>Progress
+                        </label>
+                        <textarea
+                            name="progress"
+                            cols={30}
+                            rows={1}
+                            placeholder="Enter just an integer number from 0 to 100, no more."
+                            defaultValue={props.project.progress}
+                        />
+                    </div>
                     <div
                         style={{
                             display: "flex",
@@ -142,7 +126,7 @@ export function CreateProjectForm(props: Props) {
                         }}
                     >
                         <button
-                            id="form-cancel-button"
+                            id="edit-form-cancel-button"
                             type="button"
                             style={{ backgroundColor: "transparent" }}
                             onClick={onCancelButtonClick}

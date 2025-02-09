@@ -1,7 +1,7 @@
 //Create the ProjectStatus and the ProjectType types
 export type ProjectStatus = "Pending" | "Active" | "Finished"
 export type ProjectType = "Infrastructure" | "Housing" | "Private sector"
-
+export type ModelVisibility = "hidden"|"shown"
 import { v4 as uuidv4 } from 'uuid'
 
 
@@ -17,6 +17,7 @@ export interface IProject {
     cost: number
     progress: number
     toDosManager: IToDosManager
+    modelDictionary: Record<string, ModelVisibility>
 }
 
 //Class
@@ -30,6 +31,7 @@ export class Project implements IProject {
     finishDate: Date
     cost: number = 0
     progress: number = 0
+    modelDictionary: Record<string, ModelVisibility> = {}
     
 
     //Class internals

@@ -4,7 +4,6 @@ import * as BUI from "@thatopen/ui"
 import { Project } from "../class/Project";
 import { ToDoItem } from "./ToDoItem";
 import { ToDo } from "../class/ToDo";
-import { SearchBox } from "./SearchBox";
 
 interface Props {
     project: Project
