@@ -103,7 +103,6 @@ export function ProjectsPage(props: Props) {
 
             try {
                 props.projectsManager.newProject(project, doc.id)
-                console.log(props.projectsManager)
             }
             catch (error) {
             }

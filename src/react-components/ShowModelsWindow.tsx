@@ -4,8 +4,8 @@ import * as BUI from "@thatopen/ui"
 
 import { Project, IProject, ProjectStatus, ProjectType, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
-import { updateDocument } from "../firebase"
-import { connectStorageEmulator } from "firebase/storage";
+import { deleteFile, updateDocument } from "../firebase"
+
 
 interface Props {
     project: Project
@@ -20,9 +20,10 @@ export function ShowModelsWindow(props: Props) {
 
 
     //State for managing the model visibility
-    const [models, setModels] = React.useState<Record<string, ModelVisibility>>(props.project.modelDictionary)
-
-
+    const [models, setModels] = React.useState<Record<string, ModelVisibility>>(
+        { ...props.project.modelDictionary }
+    );
+    
     const routeParams = Router.useParams<{ id: string }>()
     if (!routeParams.id) { return (<p> There is no project id</p>) }
     const project = props.projectsManager.getProject(routeParams.id)
@@ -92,10 +93,15 @@ export function ShowModelsWindow(props: Props) {
 
                 },
 
-                Delete: () => {
+                Delete: (value, rowData) => {
+                    const deleteRow = () => {
+                        delete models[rowData.Name as string]
+                        table.data = table.data.filter(item => item.data.Name !== rowData.Name);
+                    }
+
                     return BUI.html`
                     <div>
-                        <bim-button icon="material-symbols:delete" style="background-color: red"></bim-button>
+                        <bim-button icon="material-symbols:delete" style="background-color: red" @click=${deleteRow}></bim-button>
                     </div>  
                     `
                 }
@@ -115,28 +121,38 @@ export function ShowModelsWindow(props: Props) {
     }
 
     //Function for handling the accept button click
-    const  onAcceptButtonClick = async () => {
+    const onAcceptButtonClick = async () => {
         const table = document.querySelector("bim-table");
         if (!table) return
 
         const modal = document.getElementById("show-models-modal")
         if (!(modal && modal instanceof HTMLDialogElement)) { return }
-    
+
+
+        //Delete the models that are not present in the models dictionary
+        const modelDictionary = props.project.modelDictionary;
+        const modelsKeys = new Set(Object.keys(models));
+
+
+        Object.keys(modelDictionary).forEach(modelName => {
+            if (!modelsKeys.has(modelName)) {
+                deleteFile(props.project.name + "/" + modelName + ".frag")
+            }
+        });
+
+        
+        //Change the hidden/show property
 
         //This is EXTREMELY IMPORTANT, the project here is updated in firebase
+        props.project.modelDictionary=models
         await updateDocument("/projects", project.id, {
             modelDictionary: models
         });
 
-        //AND HERE IN THE UI
-        Object.entries(models).forEach(([modelName, visibility]) => {
-            props.projectsManager.editModelDictionary(project, modelName, visibility);
-        });
-    
+        props.project.modelDictionaryVersion++
 
         modal.close()
         props.onCloseForm()
-
     }
 
 

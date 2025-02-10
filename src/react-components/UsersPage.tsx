@@ -67,9 +67,7 @@ export function UsersPage(props: Props) {
             }
         }
 
-
         setUsers([...props.usersManager.list]);
-        console.log(users)
 
     }
 

@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 import * as Firestore from "firebase/firestore"
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -46,7 +46,6 @@ export async function uploadFile(filePath: string, file: Blob) {
     try {
         const storageRef = ref(storage, filePath);
         await uploadBytes(storageRef, file).then((snapshot) => {
-            console.log('Uploaded a blob or file!');
         });
     }
     catch (error) {
@@ -65,6 +64,20 @@ export async function downloadFile(filePath: string) {
 
     catch (error) {
         console.error("Error downloading file:", error);
+        return null;
+
+    }
+}
+
+//Function for deleting BIM Files
+export async function deleteFile(filePath: string) {
+    const storageRef = ref(storage, filePath);
+    try {
+        await deleteObject(storageRef)
+    }
+
+    catch (error) {
+        console.error("Error delting file:", error);
         return null;
 
     }

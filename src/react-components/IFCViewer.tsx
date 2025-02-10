@@ -3,7 +3,7 @@ import * as OBC from "@thatopen/components"
 import * as CUI from "@thatopen/ui-obc";
 import * as BUI from "@thatopen/ui"
 import * as THREE from "three"
-import { downloadFile, uploadFile } from "../firebase"
+import { downloadFile, updateDocument, uploadFile } from "../firebase"
 import { Project, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
 
@@ -53,16 +53,17 @@ export function IFCViewer(props: Props) {
     //A fragment is a THREEJS representation of an IFC
     const fragmentsManager = components.get(OBC.FragmentsManager)
 
-    fragmentsManager.onFragmentsLoaded.add((model) => {
+    fragmentsManager.onFragmentsLoaded.add(async (model) => {
       world.scene.three.add(model)
-      console.log(model.name)
       if (model?.name && model.name in props.project.modelDictionary) return
       const fragmentBinary = fragmentsManager.export(model)
       const blob = new Blob([fragmentBinary])
       const filePath = props.project.name + "/" + model.name + ".frag"
       uploadFile(filePath, blob)
       props.projectsManager.editModelDictionary(props.project, model.name, "Shown")
-      console.log("fragmentLoaded")
+      await updateDocument("/projects", props.project.id, {
+        modelDictionary: props.project.modelDictionary
+      });
 
     })
 

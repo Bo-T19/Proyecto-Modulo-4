@@ -39,7 +39,7 @@ export function EditProjectForm(props: Props) {
             modelDictionary: project.modelDictionary
         }
         try {
-            console.log(editProjectData)
+
             props.projectsManager.editProject(project, editProjectData)
             editProjectForm.reset()
             const modal = document.getElementById("edit-project-modal")

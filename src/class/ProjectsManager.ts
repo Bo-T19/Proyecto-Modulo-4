@@ -81,7 +81,6 @@ export class ProjectsManager {
             else {
                 const index = this.projectNames.indexOf(project.name);
                 this.projectNames[index] = completeData.name
-                console.log(this.projectNames)
             }
         }
 
@@ -112,7 +111,6 @@ export class ProjectsManager {
             progress: completeData.progress
         });
 
-        console.log(this)
     }
 
     //Edit the model dictionary

@@ -36,7 +36,6 @@ export function CreateProjectForm(props: Props) {
             modelDictionary: {}
         }
         try {
-            console.log(newProjectData)
             if  (isNaN(newProjectData.finishDate.getDate()))
             {
                 newProjectData.finishDate = new Date(2024, 1, 1)
