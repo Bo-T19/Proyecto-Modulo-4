@@ -6,6 +6,8 @@ import * as THREE from "three"
 import { downloadFile, updateDocument, uploadFile } from "../firebase"
 import { Project, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
+import { IfcAPI } from "web-ifc";
+
 
 interface Props {
   project: Project,
@@ -13,8 +15,91 @@ interface Props {
 }
 export function IFCViewer(props: Props) {
 
-  //Components instance, this is like the manager of our IFCViewer
+  //Components instance, this is like the manager of our IFCViewer. Also the tiler
   const components = new OBC.Components();
+
+
+  //Convert geometry to tiles function
+
+  const tileGeometry = async (filePath: string, ifcBuffer: ArrayBuffer) => {
+    const tiler = components.get(OBC.IfcGeometryTiler);
+    console.log("Tiler:", tiler);
+    console.log("Tiler settings:", tiler?.settings);
+    console.log("Tiler settings.wasm:", tiler?.settings?.wasm);
+
+    const wasm = {
+      path: "https://unpkg.com/web-ifc@0.0.57/",
+      absolute: true,
+    };
+
+    tiler.settings.wasm = wasm;
+
+    console.log("Configuración WASM:", tiler.settings.wasm);
+    tiler.settings.minGeometrySize = 20;
+    tiler.settings.minAssetsSize = 1000;
+
+
+    let files: { name: string; bits: (Uint8Array | string)[] }[] = [];
+    let geometriesData: OBC.StreamedGeometries = {};
+    let geometryFilesCount = 1;
+
+    tiler.onGeometryStreamed.add((geometry) => {
+      const { buffer, data } = geometry;
+      const bufferFileName = `${filePath}-processed-geometries-${geometryFilesCount}`;
+      for (const expressID in data) {
+        const value = data[expressID];
+        value.geometryFile = bufferFileName;
+        geometriesData[expressID] = value;
+      }
+      files.push({ name: bufferFileName, bits: [buffer] });
+      geometryFilesCount++;
+    });
+
+
+    let assetsData: OBC.StreamedAsset[] = [];
+
+    tiler.onAssetStreamed.add((assets) => {
+      assetsData = [...assetsData, ...assets];
+    });
+
+
+    tiler.onIfcLoaded.add((groupBuffer) => {
+      files.push({
+        name: `${filePath}-processed-global`,
+        bits: [groupBuffer],
+      });
+    });
+
+    tiler.onProgress.add((progress) => {
+      if (progress !== 1) return;
+      setTimeout(async () => {
+        const processedData = {
+          geometries: geometriesData,
+          assets: assetsData,
+          globalDataFileId: `${filePath}-processed-global`,
+        };
+        files.push({
+          name: `${filePath}-processed.json`,
+          bits: [JSON.stringify(processedData)],
+        });
+
+
+        for (const { name, bits } of files) {
+          await uploadFile(props.project.name + "/" + name, new Blob([bits[0]]))
+        }
+
+        assetsData = [];
+        geometriesData = {};
+        files = [];
+        geometryFilesCount = 1;
+      });
+    });
+
+    const ifcArrayBuffer = new Uint8Array(ifcBuffer);
+    // This triggers the conversion, so the listeners start to be called
+    await tiler.streamFromBuffer(ifcArrayBuffer);
+  }
+
 
   //Setting the viewer
   const setViewer = async () => {
@@ -63,7 +148,9 @@ export function IFCViewer(props: Props) {
       props.projectsManager.editModelDictionary(props.project, model.name, "Shown")
       await updateDocument("/projects", props.project.id, {
         modelDictionary: props.project.modelDictionary
-      });
+      })
+
+
 
     })
 
@@ -100,11 +187,21 @@ export function IFCViewer(props: Props) {
           `;
     })
     const toolbar = BUI.Component.create<BUI.Toolbar>(() => {
-      const [loadIfcBtn] = CUI.buttons.loadIfc({ components: components })
+      const loadIfcBtn = async () => {
+        const result = await props.projectsManager.loadIFC();
+        const blob = new Blob([result?.buffer!])
+        uploadFile(props.project.name + "/" + result?.fileName!, blob)
+        tileGeometry( result?.fileName!, result?.buffer!)
+        console.log("Tiling done!")
+
+      };
+
       return BUI.html`
             <bim-toolbar style="justify-self: center;">
               <bim-toolbar-section>
-                ${loadIfcBtn}
+              <bim-button icon="line-md:arrow-align-top"
+                @click=${() => { loadIfcBtn() }}>
+              </bim-button>
               </bim-toolbar-section>
             </bim-toolbar>
           `;

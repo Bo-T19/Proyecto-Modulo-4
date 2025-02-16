@@ -4,6 +4,7 @@ import { ToDosManager } from "./ToDosManager"
 import * as Firestore from "firebase/firestore"
 import { firebaseDB, getCollection } from "../firebase"
 
+
 //Class
 export class ProjectsManager {
 
@@ -120,8 +121,8 @@ export class ProjectsManager {
         }
         project.modelDictionaryVersion++
     }
-    
-      
+
+
     //Import a project from JSON or export a project from JSON
 
     exportToJSON(fileName: string = "projects") {
@@ -211,6 +212,44 @@ export class ProjectsManager {
         })
         input.click()
     }
+
+    //Load an IfcModel
+    loadIFC(): Promise<{ buffer: ArrayBuffer; fileName: string } | null> {
+        return new Promise((resolve, reject) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.ifc';
+    
+            const reader = new FileReader();
+    
+            reader.addEventListener('load', () => {
+                if (reader.result instanceof ArrayBuffer && input.files) {
+                    resolve({
+                        buffer: reader.result,
+                        fileName: input.files[0].name
+                    });
+                } else {
+                    reject(new Error("Couldn't read the file"));
+                }
+            });
+    
+            reader.addEventListener('error', () => {
+                reject(new Error("Couldn't read the file"));
+            });
+    
+            input.addEventListener('change', () => {
+                const filesList = input.files;
+                if (!filesList || filesList.length === 0) {
+                    reject(new Error("Didn't select any file"));
+                    return;
+                }
+                reader.readAsArrayBuffer(filesList[0]);
+            });
+    
+            input.click();
+        });
+    }
+    
 
     //GetProject by ID
     getProject(id: string) {
