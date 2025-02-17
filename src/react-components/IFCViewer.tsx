@@ -15,6 +15,9 @@ interface Props {
 }
 export function IFCViewer(props: Props) {
 
+  //State for tracking the modelDictionary
+  const [modelDictionaryVersion, setModelDictionaryVersion] = React.useState(props.project.modelDictionaryVersion);
+
   //Components instance, this is like the manager of our IFCViewer. Also the tiler
   const components = new OBC.Components();
 
@@ -42,6 +45,8 @@ export function IFCViewer(props: Props) {
     let files: { name: string; bits: (Uint8Array | string)[] }[] = [];
     let geometriesData: OBC.StreamedGeometries = {};
     let geometryFilesCount = 1;
+
+
 
     tiler.onGeometryStreamed.add((geometry) => {
       const { buffer, data } = geometry;
@@ -84,9 +89,12 @@ export function IFCViewer(props: Props) {
         });
 
 
-        for (const { name, bits } of files) {
-          await uploadFile(props.project.name + "/" + name, new Blob([bits[0]]))
-        }
+        await Promise.all(
+          files.map(({ name, bits }) =>
+            uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/GT/" + name, new Blob([bits[0]]))
+          )
+        );
+
 
         assetsData = [];
         geometriesData = {};
@@ -96,8 +104,40 @@ export function IFCViewer(props: Props) {
     });
 
     const ifcArrayBuffer = new Uint8Array(ifcBuffer);
-    // This triggers the conversion, so the listeners start to be called
-    await tiler.streamFromBuffer(ifcArrayBuffer);
+
+
+    //Then, try to tile
+    try {
+      // This triggers the conversion, so the listeners start to be called
+      await tiler.streamFromBuffer(ifcArrayBuffer);
+    }
+    catch (error) {
+      console.log("An error ocurred:" + error)
+    }
+
+
+    //Then, create the fragments group and load it to Firbase. Initialize the components and thee fragments manager
+
+    const fragmentsManager = components.get(OBC.FragmentsManager)
+    
+    //IFC Loader. First we get from components the IfcLoader
+    const ifcLoader = components.get(OBC.IfcLoader)
+    ifcLoader.setup()//We need to start the Loader
+
+    const model = await ifcLoader.load(ifcArrayBuffer);
+    const fragmentBinary = fragmentsManager.export(model)
+    const blob = new Blob([fragmentBinary])
+    await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + filePath.slice(0, -4) + ".frag", blob)
+
+    
+    props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
+    setModelDictionaryVersion(props.project.modelDictionaryVersion)
+
+    console.log(props.project.modelDictionaryVersion)
+    await updateDocument("/projects", props.project.id, {
+      modelDictionary: props.project.modelDictionary
+    })
+    //fragmentsManager.dispose()
   }
 
 
@@ -137,31 +177,32 @@ export function IFCViewer(props: Props) {
     //Then the fragmentsManager. Then, add the funcionality for onFragmentsLoaded
     //A fragment is a THREEJS representation of an IFC
     const fragmentsManager = components.get(OBC.FragmentsManager)
-
-    fragmentsManager.onFragmentsLoaded.add(async (model) => {
-      world.scene.three.add(model)
-      if (model?.name && model.name in props.project.modelDictionary) return
-      const fragmentBinary = fragmentsManager.export(model)
-      const blob = new Blob([fragmentBinary])
-      const filePath = props.project.name + "/" + model.name + ".frag"
-      uploadFile(filePath, blob)
-      props.projectsManager.editModelDictionary(props.project, model.name, "Shown")
-      await updateDocument("/projects", props.project.id, {
-        modelDictionary: props.project.modelDictionary
-      })
-
-
-
-    })
+    /*
+        fragmentsManager.onFragmentsLoaded.add(async (model) => {
+          world.scene.three.add(model)
+          if (model?.name && model.name in props.project.modelDictionary) return
+          const fragmentBinary = fragmentsManager.export(model)
+          const blob = new Blob([fragmentBinary])
+          const filePath = props.project.name + "/" + model.name + ".frag"
+          uploadFile(filePath, blob)
+          props.projectsManager.editModelDictionary(props.project, model.name, "Shown")
+          await updateDocument("/projects", props.project.id, {
+            modelDictionary: props.project.modelDictionary
+          })
+    
+    
+    
+        })*/
 
     for (const [key, value] of Object.entries(props.project.modelDictionary)) {
 
       if (value === "Shown") {
-        const binary = await downloadFile(props.project.name + "/" + key + ".frag")
+        const binary = await downloadFile(props.project.name + "/" +key.slice(0,-4)+"/"+ key.slice(0,-4) + ".frag")
         if (!(binary instanceof ArrayBuffer)) return
         const fragmentBinary = new Uint8Array(binary)
         const fragmentsManager = components.get(OBC.FragmentsManager)
-        fragmentsManager.load(fragmentBinary)
+        const model = fragmentsManager.load(fragmentBinary)
+        world.scene.three.add(model)
       }
       rendererComponent.resize();
       cameraComponent.updateAspect();
@@ -190,8 +231,8 @@ export function IFCViewer(props: Props) {
       const loadIfcBtn = async () => {
         const result = await props.projectsManager.loadIFC();
         const blob = new Blob([result?.buffer!])
-        uploadFile(props.project.name + "/" + result?.fileName!, blob)
-        tileGeometry( result?.fileName!, result?.buffer!)
+        await uploadFile(props.project.name + "/" + result?.fileName!.slice(0, -4) + "/" + result?.fileName!, blob)
+        await tileGeometry(result?.fileName!, result?.buffer!)
         console.log("Tiling done!")
 
       };
@@ -224,7 +265,7 @@ export function IFCViewer(props: Props) {
 
   //useEffect for setting it all
   React.useEffect(() => {
-
+    console.log("modelDictionaryVersion changed:", props.project.modelDictionaryVersion);
     components.dispose();
     setupUI()
     setViewer()
@@ -235,7 +276,7 @@ export function IFCViewer(props: Props) {
         components.dispose()
       }
     }
-  }, [props.project.modelDictionaryVersion])
+  }, [modelDictionaryVersion])
 
 
 
