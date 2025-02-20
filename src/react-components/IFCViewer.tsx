@@ -119,7 +119,7 @@ export function IFCViewer(props: Props) {
     //Then, create the fragments group and load it to Firbase. Initialize the components and thee fragments manager
 
     const fragmentsManager = components.get(OBC.FragmentsManager)
-    
+
     //IFC Loader. First we get from components the IfcLoader
     const ifcLoader = components.get(OBC.IfcLoader)
     ifcLoader.setup()//We need to start the Loader
@@ -129,7 +129,7 @@ export function IFCViewer(props: Props) {
     const blob = new Blob([fragmentBinary])
     await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + filePath.slice(0, -4) + ".frag", blob)
 
-    
+
     props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
     setModelDictionaryVersion(props.project.modelDictionaryVersion)
 
@@ -140,7 +140,74 @@ export function IFCViewer(props: Props) {
     //fragmentsManager.dispose()
   }
 
+  const tileProperties = async (filePath: string, ifcBuffer: ArrayBuffer) => {
+    const propsStreamer = components.get(OBC.IfcPropertiesTiler);
 
+    propsStreamer.settings.wasm = {
+      path: "https://unpkg.com/web-ifc@0.0.66/",
+      absolute: true,
+    };
+
+    let counter = 0;
+
+    const files: { name: string; bits: Blob }[] = [];
+
+    interface StreamedProperties {
+      types: {
+        [typeID: number]: number[];
+      };
+
+      ids: {
+        [id: number]: number;
+      };
+
+      indexesFile: string;
+    }
+    
+    const jsonFile: StreamedProperties = {
+      types: {},
+      ids: {},
+      indexesFile: "small.ifc-processed-properties-indexes",
+    };
+
+
+    propsStreamer.onPropertiesStreamed.add(async (props) => {
+      if (!jsonFile.types[props.type]) {
+        jsonFile.types[props.type] = [];
+      }
+      jsonFile.types[props.type].push(counter);
+
+      for (const id in props.data) {
+        jsonFile.ids[id] = counter;
+      }
+
+      const name = `small.ifc-processed-properties-${counter}`;
+      const bits = new Blob([JSON.stringify(props.data)]);
+      files.push({ bits, name });
+
+      counter++;
+    });
+
+    propsStreamer.onProgress.add(async (progress) => {
+      console.log(progress);
+    });
+
+    propsStreamer.onIndicesStreamed.add(async (props) => {
+      files.push({
+        name: `small.ifc-processed-properties.json`,
+        bits: new Blob([JSON.stringify(jsonFile)]),
+      });
+
+      const relations = components.get(OBC.IfcRelationsIndexer);
+      const serializedRels = relations.serializeRelations(props);
+
+      files.push({
+        name: "small.ifc-processed-properties-indexes",
+        bits: new Blob([serializedRels]),
+      });
+
+    });
+  }
   //Setting the viewer
   const setViewer = async () => {
 
@@ -197,7 +264,7 @@ export function IFCViewer(props: Props) {
     for (const [key, value] of Object.entries(props.project.modelDictionary)) {
 
       if (value === "Shown") {
-        const binary = await downloadFile(props.project.name + "/" +key.slice(0,-4)+"/"+ key.slice(0,-4) + ".frag")
+        const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
         if (!(binary instanceof ArrayBuffer)) return
         const fragmentBinary = new Uint8Array(binary)
         const fragmentsManager = components.get(OBC.FragmentsManager)
