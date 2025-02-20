@@ -1,7 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { deleteObject, getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import { deleteObject, getDownloadURL, getStorage, ref, uploadBytes, listAll } from "firebase/storage";
 import * as Firestore from "firebase/firestore"
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -74,6 +74,7 @@ export async function deleteFile(filePath: string) {
     const storageRef = ref(storage, filePath);
     try {
         await deleteObject(storageRef)
+
     }
 
     catch (error) {
@@ -82,3 +83,30 @@ export async function deleteFile(filePath: string) {
 
     }
 }
+
+//Function for deleting entire folders
+
+
+export async function deleteFolderRecursive(folderPath: string) {
+    const folderRef = ref(storage, folderPath);
+  
+    try {
+      // List all files and subfolders inside the folder
+      const res = await listAll(folderRef);
+  
+      // Delete all files inside the folder
+      const deleteFilePromises = res.items.map((fileRef) => deleteObject(fileRef));
+  
+      // Recursively delete all subfolders
+      const deleteFolderPromises = res.prefixes.map((subFolderRef) =>
+        deleteFolderRecursive(subFolderRef.fullPath)
+      );
+  
+      // Execute all deletions in parallel
+      await Promise.all([...deleteFilePromises, ...deleteFolderPromises]);
+  
+      console.log(`Folder "${folderPath}" and all its contents have been deleted.`);
+    } catch (error) {
+      console.error("Error deleting the folder:", error);
+    }
+  }

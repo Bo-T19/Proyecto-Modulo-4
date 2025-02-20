@@ -262,6 +262,11 @@ export function IFCViewer(props: Props) {
     viewerContainer.appendChild(floatingGrid)
   }
 
+  //useEffect for when the props.project.modelDictionaryVersion changes
+  React.useEffect(() => {
+    setModelDictionaryVersion(props.project.modelDictionaryVersion);
+  }, [props.project.modelDictionaryVersion]);
+
 
   //useEffect for setting it all
   React.useEffect(() => {

@@ -4,7 +4,7 @@ import * as BUI from "@thatopen/ui"
 
 import { Project, IProject, ProjectStatus, ProjectType, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
-import { deleteFile, updateDocument } from "../firebase"
+import { deleteFile, updateDocument, deleteFolderRecursive } from "../firebase"
 
 
 interface Props {
@@ -136,7 +136,7 @@ export function ShowModelsWindow(props: Props) {
 
         Object.keys(modelDictionary).forEach(modelName => {
             if (!modelsKeys.has(modelName)) {
-                deleteFile(props.project.name + "/" + modelName + ".frag")
+                deleteFolderRecursive(props.project.name + "/" + modelName.slice(0,-4)+ "/")
             }
         });
 
