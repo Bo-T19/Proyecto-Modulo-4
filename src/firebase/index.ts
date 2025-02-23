@@ -84,8 +84,16 @@ export async function deleteFile(filePath: string) {
     }
 }
 
-//Function for deleting entire folders
+//Getting the download URL of a file
 
+export async function getURL(filePath: string)
+{
+    const storageRef = ref(storage, filePath);
+    return getDownloadURL(storageRef)
+}
+
+
+//Function for deleting entire folders
 
 export async function deleteFolderRecursive(folderPath: string) {
     const folderRef = ref(storage, folderPath);

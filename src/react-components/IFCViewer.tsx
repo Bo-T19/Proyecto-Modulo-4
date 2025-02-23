@@ -1,11 +1,11 @@
 import * as React from "react"
 import * as OBC from "@thatopen/components"
-import * as CUI from "@thatopen/ui-obc";
 import * as BUI from "@thatopen/ui"
 import * as THREE from "three"
-import { downloadFile, updateDocument, uploadFile } from "../firebase"
+import { downloadFile, getURL, updateDocument, uploadFile } from "../firebase"
 import { Project, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
+import * as OBCF from "@thatopen/components-front";
 import { IfcAPI } from "web-ifc";
 
 
@@ -86,7 +86,7 @@ export function IFCViewer(props: Props) {
 
         await Promise.all(
           files.map(({ name, bits }) =>
-            uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/GT/" + name, new Blob([bits[0]]))
+            uploadFile(props.project.name + "/Tiles/" + name, new Blob([bits[0]]))
           )
         );
 
@@ -191,7 +191,7 @@ export function IFCViewer(props: Props) {
       console.log(progress);
     });
 
-    
+
     propsTiler.onIndicesStreamed.add(async (props) => {
       files.push({
         name: `${filePath.slice(0, -4)}.ifc-processed-properties.json`,
@@ -210,7 +210,7 @@ export function IFCViewer(props: Props) {
 
       await Promise.all(
         files.map(({ name, bits }) =>
-          uploadFile(projectName + "/" + filePath.slice(0, -4) + "/PT/" + name, bits)
+          uploadFile(projectName + "/Tiles/" + name, bits)
         )
       );
     });
@@ -262,6 +262,57 @@ export function IFCViewer(props: Props) {
     const ifcLoader = components.get(OBC.IfcLoader)
     ifcLoader.setup()//We need to start the Loader
 
+    //Then, we get the streamer
+    const ifcStreamer = components.get(OBCF.IfcStreamer);
+
+    ifcStreamer.world = world;
+
+    //Some configurations for the streamer
+    world.camera.controls.addEventListener("sleep", () => {
+      ifcStreamer.culler.needsUpdate = true;
+    });
+
+    ifcStreamer.useCache = true;
+
+    async function clearCache() {
+      await ifcStreamer.clearCache();
+      window.location.reload();
+    }
+
+    ifcStreamer.culler.threshold = 1;   
+    ifcStreamer.culler.maxHiddenTime = 5000;  
+    ifcStreamer.culler.maxLostTime = 10000;  
+
+    //I have to override the streamer fetch function, in order to make it work with firebase:
+    ifcStreamer.fetch = async (fileName: string): Promise<Response> => {
+      try {
+        // Generates the url
+        const url = await getURL(fileName);
+        const response = await fetch(url);
+        return response;
+      } catch (error) {
+        console.error("Error al cargar el archivo desde Firebase:", error);
+        throw error;
+      }
+    };
+
+    console.log(fetch)
+    ifcStreamer.url = props.project.name + "/Tiles/"
+
+    //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
+    async function loadModel(geometryURL: string, propertiesURL?: string) {
+      const rawGeometryData = await fetch(geometryURL);
+      const geometryData = await rawGeometryData.json();
+      let propertiesData;
+      if (propertiesURL) {
+        const rawPropertiesData = await fetch(propertiesURL);
+        propertiesData = await rawPropertiesData.json();
+      }
+      const model = await ifcStreamer.load(geometryData, true, propertiesData);
+      console.log(model);
+    }
+
+
     //Then the fragmentsManager. Then, add the funcionality for onFragmentsLoaded
     //A fragment is a THREEJS representation of an IFC
     const fragmentsManager = components.get(OBC.FragmentsManager)
@@ -286,11 +337,16 @@ export function IFCViewer(props: Props) {
 
       if (value === "Shown") {
         const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
+        const geometryURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed.json")
+        const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")
+        console.log(geometryURL, propertyURL)
+        /*
         if (!(binary instanceof ArrayBuffer)) return
         const fragmentBinary = new Uint8Array(binary)
         const fragmentsManager = components.get(OBC.FragmentsManager)
         const model = fragmentsManager.load(fragmentBinary)
-        world.scene.three.add(model)
+        world.scene.three.add(model)}*/
+        await loadModel(geometryURL, propertyURL)
       }
       rendererComponent.resize();
       cameraComponent.updateAspect();
