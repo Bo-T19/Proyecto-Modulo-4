@@ -118,3 +118,25 @@ export async function deleteFolderRecursive(folderPath: string) {
       console.error("Error deleting the folder:", error);
     }
   }
+
+  //Function for deleting files containing a text in its name (Useful for the tiler files)
+ export async function deleteFilesContainingText(folderPath: string, searchText: string) {
+    try {
+      const storage = getStorage();
+      const folderRef = ref(storage, folderPath);
+  
+      // List all files inside the specified folder
+      const result = await listAll(folderRef);
+      const matchingFiles = result.items.filter(item => item.name.includes(searchText));
+  
+      // Delete each matching file
+      for (const fileRef of matchingFiles) {
+        await deleteObject(fileRef);
+      }
+  
+      console.log(`Deleted ${matchingFiles.length} files containing "${searchText}"`);
+    } catch (error) {
+      console.error("Error deleting files:", error);
+    }
+  }
+  

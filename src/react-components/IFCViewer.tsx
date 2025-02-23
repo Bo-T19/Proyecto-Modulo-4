@@ -279,9 +279,9 @@ export function IFCViewer(props: Props) {
       window.location.reload();
     }
 
-    ifcStreamer.culler.threshold = 1;   
-    ifcStreamer.culler.maxHiddenTime = 5000;  
-    ifcStreamer.culler.maxLostTime = 10000;  
+    ifcStreamer.culler.threshold = 1;
+    ifcStreamer.culler.maxHiddenTime = 5000;
+    ifcStreamer.culler.maxLostTime = 10000;
 
     //I have to override the streamer fetch function, in order to make it work with firebase:
     ifcStreamer.fetch = async (fileName: string): Promise<Response> => {
@@ -336,17 +336,20 @@ export function IFCViewer(props: Props) {
     for (const [key, value] of Object.entries(props.project.modelDictionary)) {
 
       if (value === "Shown") {
-        const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
-        const geometryURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed.json")
-        const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")
-        console.log(geometryURL, propertyURL)
-        /*
-        if (!(binary instanceof ArrayBuffer)) return
-        const fragmentBinary = new Uint8Array(binary)
-        const fragmentsManager = components.get(OBC.FragmentsManager)
-        const model = fragmentsManager.load(fragmentBinary)
-        world.scene.three.add(model)}*/
-        await loadModel(geometryURL, propertyURL)
+
+        try {
+          const geometryURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed.json")
+          const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")
+          await loadModel(geometryURL, propertyURL)
+        }
+        catch(error){
+          const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
+          if (!(binary instanceof ArrayBuffer)) return
+          const fragmentBinary = new Uint8Array(binary)
+          const fragmentsManager = components.get(OBC.FragmentsManager)
+          const model = fragmentsManager.load(fragmentBinary)
+          world.scene.three.add(model)
+        }
       }
       rendererComponent.resize();
       cameraComponent.updateAspect();
