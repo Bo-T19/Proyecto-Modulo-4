@@ -23,12 +23,8 @@ export function IFCViewer(props: Props) {
 
 
   //Convert geometry to tiles function
-
   const tileGeometry = async (filePath: string, ifcBuffer: ArrayBuffer) => {
     const tiler = components.get(OBC.IfcGeometryTiler);
-    console.log("Tiler:", tiler);
-    console.log("Tiler settings:", tiler?.settings);
-    console.log("Tiler settings.wasm:", tiler?.settings?.wasm);
 
     const wasm = {
       path: "https://unpkg.com/web-ifc@0.0.57/",
@@ -45,7 +41,6 @@ export function IFCViewer(props: Props) {
     let files: { name: string; bits: (Uint8Array | string)[] }[] = [];
     let geometriesData: OBC.StreamedGeometries = {};
     let geometryFilesCount = 1;
-
 
 
     tiler.onGeometryStreamed.add((geometry) => {
@@ -137,20 +132,19 @@ export function IFCViewer(props: Props) {
     await updateDocument("/projects", props.project.id, {
       modelDictionary: props.project.modelDictionary
     })
-    //fragmentsManager.dispose()
+
   }
 
+  //Convert properties to tiles function
   const tileProperties = async (filePath: string, ifcBuffer: ArrayBuffer) => {
-    const propsStreamer = components.get(OBC.IfcPropertiesTiler);
+    const propsTiler = components.get(OBC.IfcPropertiesTiler);
+    const projectName = props.project.name;
 
-    propsStreamer.settings.wasm = {
-      path: "https://unpkg.com/web-ifc@0.0.66/",
+
+    propsTiler.settings.wasm = {
+      path: "https://unpkg.com/web-ifc@0.0.57/",
       absolute: true,
     };
-
-    let counter = 0;
-
-    const files: { name: string; bits: Blob }[] = [];
 
     interface StreamedProperties {
       types: {
@@ -163,15 +157,20 @@ export function IFCViewer(props: Props) {
 
       indexesFile: string;
     }
-    
+
     const jsonFile: StreamedProperties = {
       types: {},
       ids: {},
-      indexesFile: "small.ifc-processed-properties-indexes",
+      indexesFile: `${filePath.slice(0, -4)}.ifc-processed-properties-indexes`,
     };
 
 
-    propsStreamer.onPropertiesStreamed.add(async (props) => {
+    let counter = 0;
+
+    const files: { name: string; bits: Blob }[] = [];
+
+
+    propsTiler.onPropertiesStreamed.add(async (props) => {
       if (!jsonFile.types[props.type]) {
         jsonFile.types[props.type] = [];
       }
@@ -181,20 +180,21 @@ export function IFCViewer(props: Props) {
         jsonFile.ids[id] = counter;
       }
 
-      const name = `small.ifc-processed-properties-${counter}`;
+      const name = `${filePath.slice(0, -4)}.ifc-processed-properties-${counter}`;
       const bits = new Blob([JSON.stringify(props.data)]);
       files.push({ bits, name });
 
       counter++;
     });
 
-    propsStreamer.onProgress.add(async (progress) => {
+    propsTiler.onProgress.add(async (progress) => {
       console.log(progress);
     });
 
-    propsStreamer.onIndicesStreamed.add(async (props) => {
+    
+    propsTiler.onIndicesStreamed.add(async (props) => {
       files.push({
-        name: `small.ifc-processed-properties.json`,
+        name: `${filePath.slice(0, -4)}.ifc-processed-properties.json`,
         bits: new Blob([JSON.stringify(jsonFile)]),
       });
 
@@ -202,12 +202,33 @@ export function IFCViewer(props: Props) {
       const serializedRels = relations.serializeRelations(props);
 
       files.push({
-        name: "small.ifc-processed-properties-indexes",
+        name: `${filePath.slice(0, -4)}.ifc-processed-properties-indexes`,
         bits: new Blob([serializedRels]),
       });
+      console.log(files)
 
+
+      await Promise.all(
+        files.map(({ name, bits }) =>
+          uploadFile(projectName + "/" + filePath.slice(0, -4) + "/PT/" + name, bits)
+        )
+      );
     });
+
+    const ifcArrayBuffer = new Uint8Array(ifcBuffer);
+
+
+    //Then, try to tile the file
+    try {
+      // This triggers the conversion, so the listeners start to be called
+      await propsTiler.streamFromBuffer(ifcArrayBuffer);
+    }
+    catch (error) {
+      console.log("An error ocurred:" + error)
+    }
   }
+
+
   //Setting the viewer
   const setViewer = async () => {
 
@@ -300,8 +321,8 @@ export function IFCViewer(props: Props) {
         const blob = new Blob([result?.buffer!])
         await uploadFile(props.project.name + "/" + result?.fileName!.slice(0, -4) + "/" + result?.fileName!, blob)
         await tileGeometry(result?.fileName!, result?.buffer!)
+        await tileProperties(result?.fileName!, result?.buffer!)
         console.log("Tiling done!")
-
       };
 
       return BUI.html`
