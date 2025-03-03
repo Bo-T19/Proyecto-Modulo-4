@@ -7,7 +7,8 @@ import { Project, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
 import * as OBCF from "@thatopen/components-front";
 import { IfcAPI } from "web-ifc";
-
+import * as CUI from "@thatopen/ui-obc";
+import { FragmentsGroup } from "@thatopen/fragments"
 
 interface Props {
   project: Project,
@@ -20,6 +21,21 @@ export function IFCViewer(props: Props) {
 
   //Components instance, this is like the manager of our IFCViewer. Also the tiler
   const components = new OBC.Components();
+
+
+  //Override of the FragmentsGroup fetch method
+  
+  FragmentsGroup.fetch =  async (fileName: string): Promise<Response> => {
+    try {
+      // Generates the url
+      const url = await getURL(fileName);
+      const response = await fetch(url);
+      return response;
+    } catch (error) {
+      console.error("Error al cargar el archivo desde Firebase:", error);
+      throw error;
+    }
+  };
 
 
   //Convert geometry to tiles function
@@ -228,7 +244,6 @@ export function IFCViewer(props: Props) {
     }
   }
 
-
   //Setting the viewer
   const setViewer = async () => {
 
@@ -245,7 +260,7 @@ export function IFCViewer(props: Props) {
     world.scene.setup()
 
     const viewerContainer = document.getElementById("viewer-container") as HTMLElement
-    const rendererComponent = new OBC.SimpleRenderer(components, viewerContainer)
+    const rendererComponent = new OBCF.PostproductionRenderer(components, viewerContainer)
     world.renderer = rendererComponent
 
 
@@ -253,9 +268,13 @@ export function IFCViewer(props: Props) {
     world.camera = cameraComponent
     world.scene.three.background = new THREE.Color(220, 220, 215);
 
-
     cameraComponent.updateAspect()
     components.init()
+
+    //Highlighter
+    const highlighter = components.get(OBCF.Highlighter)
+    highlighter.setup({ world })
+    highlighter.zoomToSelection = true
 
 
     //IFC Loader. First we get from components the IfcLoader
@@ -288,6 +307,7 @@ export function IFCViewer(props: Props) {
       try {
         // Generates the url
         const url = await getURL(fileName);
+        console.log(url)
         const response = await fetch(url);
         return response;
       } catch (error) {
@@ -295,8 +315,8 @@ export function IFCViewer(props: Props) {
         throw error;
       }
     };
+    
 
-    console.log(fetch)
     ifcStreamer.url = props.project.name + "/Tiles/"
 
     //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
@@ -309,29 +329,16 @@ export function IFCViewer(props: Props) {
         propertiesData = await rawPropertiesData.json();
       }
       const model = await ifcStreamer.load(geometryData, true, propertiesData);
-      console.log(model);
+
+      const indexer = components.get(OBC.IfcRelationsIndexer)
+      await indexer.process(model)
+      console.log(indexer.relationMaps)
     }
 
 
     //Then the fragmentsManager. Then, add the funcionality for onFragmentsLoaded
     //A fragment is a THREEJS representation of an IFC
     const fragmentsManager = components.get(OBC.FragmentsManager)
-    /*
-        fragmentsManager.onFragmentsLoaded.add(async (model) => {
-          world.scene.three.add(model)
-          if (model?.name && model.name in props.project.modelDictionary) return
-          const fragmentBinary = fragmentsManager.export(model)
-          const blob = new Blob([fragmentBinary])
-          const filePath = props.project.name + "/" + model.name + ".frag"
-          uploadFile(filePath, blob)
-          props.projectsManager.editModelDictionary(props.project, model.name, "Shown")
-          await updateDocument("/projects", props.project.id, {
-            modelDictionary: props.project.modelDictionary
-          })
-    
-    
-    
-        })*/
 
     for (const [key, value] of Object.entries(props.project.modelDictionary)) {
 
@@ -342,13 +349,18 @@ export function IFCViewer(props: Props) {
           const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")
           await loadModel(geometryURL, propertyURL)
         }
-        catch(error){
+        catch (error) {
           const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
           if (!(binary instanceof ArrayBuffer)) return
           const fragmentBinary = new Uint8Array(binary)
           const fragmentsManager = components.get(OBC.FragmentsManager)
           const model = fragmentsManager.load(fragmentBinary)
           world.scene.three.add(model)
+          const indexer = components.get(OBC.IfcRelationsIndexer)
+          console.log(model.hasProperties)
+          if (model.hasProperties) {
+            await indexer.process(model)
+          }
         }
       }
       rendererComponent.resize();
@@ -364,6 +376,81 @@ export function IFCViewer(props: Props) {
     })
   }
 
+  //Functionality for showing the properties of an object
+  const onShowProperties = async () => {
+    const highlighter = components.get(OBCF.Highlighter)
+    const selection = highlighter.selection.select
+    const indexer = components.get(OBC.IfcRelationsIndexer)
+    const fragmentsList = components.get(OBC.FragmentsManager).list
+
+    if (Object.keys(selection).length === 0) return
+    for (const fragmentId in selection) {
+      const expressIDs = selection[fragmentId]
+      const fragmentModel = fragmentsList.get(fragmentId)?.group;
+      if (!fragmentModel) {
+        console.warn(`Fragment group not found: ${fragmentId}`);
+        continue;
+      }
+      for (const id of expressIDs) {
+        const psets = indexer.getEntityRelations(fragmentModel, id, "IsDefinedBy")
+        if (psets) {
+          for (const expressId of psets) {
+            const prop = await fragmentModel.getProperties(expressId)
+            console.log(prop)
+          }
+        }
+      }
+    }
+  }
+
+  //Functionality for the load button
+  const loadIfcBtn = async () => {
+    const result = await props.projectsManager.loadIFC();
+    const blob = new Blob([result?.buffer!])
+    await uploadFile(props.project.name + "/" + result?.fileName!.slice(0, -4) + "/" + result?.fileName!, blob)
+    await tileGeometry(result?.fileName!, result?.buffer!)
+    await tileProperties(result?.fileName!, result?.buffer!)
+    console.log("Tiling done!")
+  };
+
+  //Functionality for the hide button
+  const onToggleVisibility = () => {
+    const highlighter = components.get(OBCF.Highlighter)
+    const fragments = components.get(OBC.FragmentsManager)
+    const selection = highlighter.selection.select
+    if (Object.keys(selection).length === 0) return
+    for (const fragmentId in selection) {
+      const fragment = fragments.list.get(fragmentId)
+      const expressIDs = selection[fragmentId]
+      for (const id of expressIDs) {
+        if (!fragment) continue
+        const isHidden = fragment.hiddenItems.has(id)
+
+        if (isHidden) {
+          fragment.setVisibility(true, [id])
+        }
+        else {
+          fragment.setVisibility(false, [id])
+        }
+      }
+    }
+  }
+
+  //Functionality for the isolate button
+  const onIsolate = () => {
+    const highlighter = components.get(OBCF.Highlighter)
+    const hider = components.get(OBC.Hider)
+    const selection = highlighter.selection.select
+    hider.isolate(selection)
+
+  }
+
+  //Funcitonality for the show all button
+  const onShowAll = () => {
+    const hider = components.get(OBC.Hider)
+    hider.set(true)
+  }
+
   //Setting the grid and the tool bar for the buttons
   const setupUI = () => {
     const viewerContainer = document.getElementById("viewer-container") as HTMLElement
@@ -374,21 +461,76 @@ export function IFCViewer(props: Props) {
             <bim-grid floating style="padding: 20px;"></bim-grid>
           `;
     })
-    const toolbar = BUI.Component.create<BUI.Toolbar>(() => {
-      const loadIfcBtn = async () => {
-        const result = await props.projectsManager.loadIFC();
-        const blob = new Blob([result?.buffer!])
-        await uploadFile(props.project.name + "/" + result?.fileName!.slice(0, -4) + "/" + result?.fileName!, blob)
-        await tileGeometry(result?.fileName!, result?.buffer!)
-        await tileProperties(result?.fileName!, result?.buffer!)
-        console.log("Tiling done!")
-      };
 
+    //Element property panel
+    const elementPropertyPanel = BUI.Component.create<BUI.Panel>(() => {
+      const [propsTable, updatePropsTable] = CUI.tables.elementProperties({
+        components,
+        fragmentIdMap: {},
+      })
+
+      
+      const highlighter = components.get(OBCF.Highlighter)
+      highlighter.events.select.onHighlight.add((fragmentIdMap) => {
+        console.log(fragmentIdMap)
+        if (!floatingGrid) return
+        floatingGrid.layout = "second"
+        updatePropsTable({ fragmentIdMap })
+        propsTable.expanded = false
+      })
+
+      highlighter.events.select.onClear.add(() => {
+        updatePropsTable({ fragmentIdMap: {} })
+        if (!floatingGrid) return
+        floatingGrid.layout = "main"
+      })
+
+      const search = (e: Event) => {
+        const input = e.target as BUI.TextInput
+        propsTable.queryString = input.value
+      }
+
+      return BUI.html`
+        <bim-panel>
+          <bim-panel-section
+            name="property"
+            label="Property Information"
+            icon="solar:document-bold"
+            fixed
+          >
+            <bim-text-input @input=${search} placeholder="Search..."></bim-text-input>
+            ${propsTable}  
+          </bim-panel-section>
+        </bim-panel>
+      `;
+    })
+
+    const toolbar = BUI.Component.create<BUI.Toolbar>(() => {
       return BUI.html`
             <bim-toolbar style="justify-self: center;">
               <bim-toolbar-section>
-              <bim-button icon="line-md:arrow-align-top"
-                @click=${() => { loadIfcBtn() }}>
+              <bim-button 
+              icon="line-md:arrow-align-top"
+              label="Load IFC"
+              @click=${() => { loadIfcBtn() }}>
+              </bim-button>
+              <bim-button
+              label="Hide"
+              icon="material-symbols:multimodal-hand-eye"
+              @click=${() => { onToggleVisibility() }}
+              >
+              </bim-button>
+              <bim-button
+              label="Isolate"
+              icon="material-symbols:switch-access-outline"
+              @click=${() => { onIsolate() }}
+              >
+              </bim-button>
+              <bim-button
+              label="Show All"
+              icon="material-symbols:multimodal-hand-eye-outline-rounded"
+              @click=${() => { onShowAll() }}
+              >
               </bim-button>
               </bim-toolbar-section>
             </bim-toolbar>
@@ -404,6 +546,18 @@ export function IFCViewer(props: Props) {
             `,
         elements: { toolbar },
       },
+      second: {
+        template: `
+        "empty elementPropertyPanel" 1fr
+        "toolbar toolbar" auto
+        /1fr 20rem
+        `,
+        elements: {
+          toolbar,
+          elementPropertyPanel
+        }
+
+      }
     }
     floatingGrid.layout = "main"
     viewerContainer.appendChild(floatingGrid)
@@ -419,9 +573,9 @@ export function IFCViewer(props: Props) {
   React.useEffect(() => {
     console.log("modelDictionaryVersion changed:", props.project.modelDictionaryVersion);
     components.dispose();
-    setupUI()
-    setViewer()
 
+    setViewer()
+    setupUI()
     return () => {
 
       if (components) {
@@ -429,7 +583,6 @@ export function IFCViewer(props: Props) {
       }
     }
   }, [modelDictionaryVersion])
-
 
 
   return (<
