@@ -2,13 +2,14 @@ import * as React from "react"
 import * as OBC from "@thatopen/components"
 import * as BUI from "@thatopen/ui"
 import * as THREE from "three"
-import { downloadFile, getURL, updateDocument, uploadFile } from "../firebase"
+import { downloadFile, downloadFilesContainingText, getURL, openDB, updateDocument, uploadFile } from "../firebase"
 import { Project, ModelVisibility } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
 import * as OBCF from "@thatopen/components-front";
 import { IfcAPI } from "web-ifc";
 import * as CUI from "@thatopen/ui-obc";
 import { FragmentsGroup } from "@thatopen/fragments"
+
 
 interface Props {
   project: Project,
@@ -22,15 +23,40 @@ export function IFCViewer(props: Props) {
   //Components instance, this is like the manager of our IFCViewer. Also the tiler
   const components = new OBC.Components();
 
+  // Function to retrieve a file from IndexedDB
+  async function getFileFromDB(filePath: string): Promise<Blob | null> {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const splitPath = filePath.split("/")
+      const name = splitPath[splitPath.length-1]
+      const transaction = db.transaction("files", "readonly");
+      const store = transaction.objectStore("files");
+      const request = store.get(name);
 
+      // Resolve the promise when the file is successfully retrieved
+      request.onsuccess = () => {
+        if (request.result) {
+          resolve(request.result.data); // Return the file data (Blob)
+        } else {
+          console.log(`Not found file{}` + name)
+          resolve(null); // Return null if the file is not found
+        }
+      };
+
+      // Reject the promise if there's an error
+      request.onerror = () => reject(request.error);
+    });
+  }
   //Override of the FragmentsGroup fetch method
-  
-  FragmentsGroup.fetch =  async (fileName: string): Promise<Response> => {
+
+  FragmentsGroup.fetch = async (fileName: string): Promise<Response> => {
     try {
       // Generates the url
-      const url = await getURL(fileName);
-      const response = await fetch(url);
-      return response;
+      const fileBlob = await getFileFromDB(fileName);
+      return new Response(fileBlob, {
+        status: 200,
+        statusText: "OK",
+      });
     } catch (error) {
       console.error("Error al cargar el archivo desde Firebase:", error);
       throw error;
@@ -298,9 +324,9 @@ export function IFCViewer(props: Props) {
       window.location.reload();
     }
 
-    ifcStreamer.culler.threshold = 1;
-    ifcStreamer.culler.maxHiddenTime = 5000;
-    ifcStreamer.culler.maxLostTime = 10000;
+    ifcStreamer.culler.threshold = 0.1;
+    ifcStreamer.culler.maxHiddenTime = 10000;
+    ifcStreamer.culler.maxLostTime = 30000;
 
     //I have to override the streamer fetch function, in order to make it work with firebase:
     ifcStreamer.fetch = async (fileName: string): Promise<Response> => {
@@ -315,7 +341,7 @@ export function IFCViewer(props: Props) {
         throw error;
       }
     };
-    
+
 
     ifcStreamer.url = props.project.name + "/Tiles/"
 
@@ -346,7 +372,9 @@ export function IFCViewer(props: Props) {
 
         try {
           const geometryURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed.json")
-          const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")
+          const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")         
+          downloadFilesContainingText(props.project.name + "/Tiles/", key.slice(0, -4) + ".ifc-processed-properties")
+          
           await loadModel(geometryURL, propertyURL)
         }
         catch (error) {
@@ -469,7 +497,7 @@ export function IFCViewer(props: Props) {
         fragmentIdMap: {},
       })
 
-      
+
       const highlighter = components.get(OBCF.Highlighter)
       highlighter.events.select.onHighlight.add((fragmentIdMap) => {
         console.log(fragmentIdMap)
