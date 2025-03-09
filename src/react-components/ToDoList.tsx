@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as BUI from "@thatopen/ui"
-
+import * as OBC from "@thatopen/components"
 import { Project } from "../class/Project";
 import { ToDoItem } from "./ToDoItem";
 import { ToDo } from "../class/ToDo";
@@ -9,10 +9,14 @@ interface Props {
     project: Project
     onOpenNewForm: () => void;
     onOpenEditForm: () => void;
-    sendId: (id: string) => void
+    sendId: (id: string) => void;
+    components: OBC.Components
 }
 
 export function ToDoList(props: Props) {
+
+    //Components instance, this is like the manager
+    const components: OBC.Components = props.components
 
     //References
     const todoContainer = React.useRef<HTMLDivElement>(null)

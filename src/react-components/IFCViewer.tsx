@@ -14,6 +14,7 @@ import { FragmentsGroup } from "@thatopen/fragments"
 interface Props {
   project: Project,
   projectsManager: ProjectsManager
+  components: OBC.Components
 }
 export function IFCViewer(props: Props) {
 
@@ -21,7 +22,7 @@ export function IFCViewer(props: Props) {
   const [modelDictionaryVersion, setModelDictionaryVersion] = React.useState(props.project.modelDictionaryVersion);
 
   //Components instance, this is like the manager of our IFCViewer. Also the tiler
-  const components = new OBC.Components();
+  const components: OBC.Components = props.components
 
   // Function to retrieve a file from IndexedDB
   async function getFileFromDB(filePath: string): Promise<Blob | null> {

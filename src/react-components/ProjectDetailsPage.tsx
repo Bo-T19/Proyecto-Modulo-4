@@ -1,6 +1,5 @@
 import * as React from "react";
 import * as Router from "react-router-dom";
-
 import { ProjectsManager } from "../class/ProjectsManager";
 import { ProjectSummary } from "./ProjectSummary";
 import { EditProjectForm } from "./EditProjectForm";
@@ -8,6 +7,7 @@ import { ToDoList } from "./ToDoList";
 import { NewToDoForm } from "./NewToDoForm";
 import { EditToDoForm } from "./EditToDoForm"
 import { IFCViewer } from "./IFCViewer";
+import * as OBC from "@thatopen/components"
 import { deleteDocument } from "../firebase";
 import { ShowModelsWindow } from "./ShowModelsWindow";
 
@@ -16,6 +16,8 @@ interface Props {
 }
 
 export function ProjectDetailsPage(props: Props) {
+    //Components instance, important for the IFCViewer and the ToDos
+    const components = new OBC.Components();
 
     const routeParams = Router.useParams<{ id: string }>()
     if (!routeParams.id) { return (<p> There is no project id</p>) }
@@ -163,10 +165,10 @@ export function ProjectDetailsPage(props: Props) {
             <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
                 <div style={{ display: "flex", flexDirection: "column", rowGap: 30, overflowY: "auto", height: "100%" }}>
                     <ProjectSummary project={project} projectsManager={props.projectsManager} onOpenForm={onEditProjectClick} />
-                    <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} />
+                    <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} components={components}/>
                 </div>
 
-                <IFCViewer project={project} projectsManager={props.projectsManager} />
+                <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />
 
             </div>
         </div>
