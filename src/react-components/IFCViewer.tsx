@@ -28,7 +28,7 @@ export function IFCViewer(props: Props) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const splitPath = filePath.split("/")
-      const name = splitPath[splitPath.length-1]
+      const name = splitPath[splitPath.length - 1]
       const transaction = db.transaction("files", "readonly");
       const store = transaction.objectStore("files");
       const request = store.get(name);
@@ -47,8 +47,8 @@ export function IFCViewer(props: Props) {
       request.onerror = () => reject(request.error);
     });
   }
-  //Override of the FragmentsGroup fetch method
 
+  //Override of the FragmentsGroup fetch method
   FragmentsGroup.fetch = async (fileName: string): Promise<Response> => {
     try {
       // Generates the url
@@ -154,7 +154,6 @@ export function IFCViewer(props: Props) {
 
 
     //Then, create the fragments group and load it to Firbase. Initialize the components and thee fragments manager
-
     const fragmentsManager = components.get(OBC.FragmentsManager)
 
     //IFC Loader. First we get from components the IfcLoader
@@ -162,10 +161,23 @@ export function IFCViewer(props: Props) {
     ifcLoader.setup()//We need to start the Loader
 
     const model = await ifcLoader.load(ifcArrayBuffer);
+
+    //Upload the fragments file
     const fragmentBinary = fragmentsManager.export(model)
     const blob = new Blob([fragmentBinary])
     await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + filePath.slice(0, -4) + ".frag", blob)
 
+    //Upload the properties file
+    const properties = model.getLocalProperties();
+    if (properties) {
+      const jsonProperties = JSON.stringify(properties);
+      const blob = new Blob([jsonProperties], { type: 'application/json' });
+      const file = new File([blob], "frag-props.json");
+      await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + filePath.slice(0, -4) + "frag-props.json", blob)
+      console.log("Archivo JSON subido exitosamente a Firebase.");
+    } else {
+      console.log("No hay propiedades locales para convertir en JSON.");
+    }
 
     props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
     setModelDictionaryVersion(props.project.modelDictionaryVersion)
@@ -181,7 +193,6 @@ export function IFCViewer(props: Props) {
   const tileProperties = async (filePath: string, ifcBuffer: ArrayBuffer) => {
     const propsTiler = components.get(OBC.IfcPropertiesTiler);
     const projectName = props.project.name;
-
 
     propsTiler.settings.wasm = {
       path: "https://unpkg.com/web-ifc@0.0.57/",
@@ -210,7 +221,6 @@ export function IFCViewer(props: Props) {
     let counter = 0;
 
     const files: { name: string; bits: Blob }[] = [];
-
 
     propsTiler.onPropertiesStreamed.add(async (props) => {
       if (!jsonFile.types[props.type]) {
@@ -247,7 +257,6 @@ export function IFCViewer(props: Props) {
         name: `${filePath.slice(0, -4)}.ifc-processed-properties-indexes`,
         bits: new Blob([serializedRels]),
       });
-      console.log(files)
 
 
       await Promise.all(
@@ -269,6 +278,13 @@ export function IFCViewer(props: Props) {
       console.log("An error ocurred:" + error)
     }
   }
+
+
+  //Classifications
+  const [classificationsTree, updateClassificationsTree] = CUI.tables.classificationTree({
+    components,
+    classifications: []
+  })
 
   //Setting the viewer
   const setViewer = async () => {
@@ -302,7 +318,6 @@ export function IFCViewer(props: Props) {
     highlighter.setup({ world })
     highlighter.zoomToSelection = true
 
-
     //IFC Loader. First we get from components the IfcLoader
     const ifcLoader = components.get(OBC.IfcLoader)
     ifcLoader.setup()//We need to start the Loader
@@ -333,7 +348,6 @@ export function IFCViewer(props: Props) {
       try {
         // Generates the url
         const url = await getURL(fileName);
-        console.log(url)
         const response = await fetch(url);
         return response;
       } catch (error) {
@@ -346,7 +360,7 @@ export function IFCViewer(props: Props) {
     ifcStreamer.url = props.project.name + "/Tiles/"
 
     //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
-    async function loadModel(geometryURL: string, propertiesURL?: string) {
+    async function loadTiledModel(geometryURL: string, propertiesURL?: string) {
       const rawGeometryData = await fetch(geometryURL);
       const geometryData = await rawGeometryData.json();
       let propertiesData;
@@ -358,9 +372,22 @@ export function IFCViewer(props: Props) {
 
       const indexer = components.get(OBC.IfcRelationsIndexer)
       await indexer.process(model)
-      console.log(indexer.relationMaps)
-    }
 
+      //Classifier
+      /*
+      const classifier = components.get(OBC.Classifier)
+      await classifier.bySpatialStructure(model)
+      classifier.byEntity(model)
+
+      const classifications = [
+        { system: "entities", label: "Entities" },
+        { system: "spatialStructures", label: "Spatial Containers" },
+      ]
+      if (updateClassificationsTree) {
+        updateClassificationsTree({ classifications })
+      }
+        */
+    }
 
     //Then the fragmentsManager. Then, add the funcionality for onFragmentsLoaded
     //A fragment is a THREEJS representation of an IFC
@@ -372,22 +399,48 @@ export function IFCViewer(props: Props) {
 
         try {
           const geometryURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed.json")
-          const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")         
+          const propertyURL = await getURL(props.project.name + "/Tiles/" + key.slice(0, -4) + ".ifc-processed-properties.json")
           downloadFilesContainingText(props.project.name + "/Tiles/", key.slice(0, -4) + ".ifc-processed-properties")
-          
-          await loadModel(geometryURL, propertyURL)
+
+          await loadTiledModel(geometryURL, propertyURL)
+          console.log("Tiled model loaded")
         }
         catch (error) {
           const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
+          
+          const propertiesBuffer = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + "frag-props.json");
+
+
+
           if (!(binary instanceof ArrayBuffer)) return
           const fragmentBinary = new Uint8Array(binary)
           const fragmentsManager = components.get(OBC.FragmentsManager)
           const model = fragmentsManager.load(fragmentBinary)
+          if (propertiesBuffer) {
+            const propertiesJson = JSON.parse(new TextDecoder().decode(propertiesBuffer));
+            model.setLocalProperties(propertiesJson)
+          }
+          
           world.scene.three.add(model)
           const indexer = components.get(OBC.IfcRelationsIndexer)
-          console.log(model.hasProperties)
           if (model.hasProperties) {
             await indexer.process(model)
+            
+            //Classifier
+            /*
+            const classifier = components.get(OBC.Classifier)
+            await classifier.bySpatialStructure(model)
+            classifier.byEntity(model)
+
+            const classifications = [
+              { system: "entities", label: "Entities" },
+              { system: "spatialStructures", label: "Spatial Containers" },
+            ]
+            if (updateClassificationsTree) {
+              updateClassificationsTree({ classifications })
+            }
+              */
+             console.log("Not tiled model loaded")
           }
         }
       }
@@ -395,40 +448,11 @@ export function IFCViewer(props: Props) {
       cameraComponent.updateAspect();
     }
 
-
-
     //Important, whenever there are changes in the size of the app
     viewerContainer.addEventListener("resize", () => {
       rendererComponent.resize()
       cameraComponent.updateAspect()
     })
-  }
-
-  //Functionality for showing the properties of an object
-  const onShowProperties = async () => {
-    const highlighter = components.get(OBCF.Highlighter)
-    const selection = highlighter.selection.select
-    const indexer = components.get(OBC.IfcRelationsIndexer)
-    const fragmentsList = components.get(OBC.FragmentsManager).list
-
-    if (Object.keys(selection).length === 0) return
-    for (const fragmentId in selection) {
-      const expressIDs = selection[fragmentId]
-      const fragmentModel = fragmentsList.get(fragmentId)?.group;
-      if (!fragmentModel) {
-        console.warn(`Fragment group not found: ${fragmentId}`);
-        continue;
-      }
-      for (const id of expressIDs) {
-        const psets = indexer.getEntityRelations(fragmentModel, id, "IsDefinedBy")
-        if (psets) {
-          for (const expressId of psets) {
-            const prop = await fragmentModel.getProperties(expressId)
-            console.log(prop)
-          }
-        }
-      }
-    }
   }
 
   //Functionality for the load button
@@ -497,10 +521,8 @@ export function IFCViewer(props: Props) {
         fragmentIdMap: {},
       })
 
-
       const highlighter = components.get(OBCF.Highlighter)
       highlighter.events.select.onHighlight.add((fragmentIdMap) => {
-        console.log(fragmentIdMap)
         if (!floatingGrid) return
         floatingGrid.layout = "second"
         updatePropsTable({ fragmentIdMap })
@@ -533,15 +555,47 @@ export function IFCViewer(props: Props) {
       `;
     })
 
+    //Classifications panel
+    const classifierPanel = BUI.Component.create<BUI.Panel>(() => {
+      return BUI.html
+        `
+      <bim-panel>
+          <bim-panel-section
+              name="classifier"
+              label="Classifier"
+              icon="solar:document-bold"
+              fixed
+          >
+              <bim-label>Classifications</bim-label>
+              ${classificationsTree}
+          </bim-panel-section>
+      </bim-panel>
+      `;
+    })
+
+
+    //Functiionality for the classifier button
+    const onClassifier = () => {
+      if (!floatingGrid) return
+      if (floatingGrid.layout !== "classifier") {
+        floatingGrid.layout = "classifier"
+      } else {
+        floatingGrid.layout = "main"
+      }
+    }
+
+    //Toolbar
     const toolbar = BUI.Component.create<BUI.Toolbar>(() => {
       return BUI.html`
             <bim-toolbar style="justify-self: center;">
-              <bim-toolbar-section>
+              <bim-toolbar-section label="Load Models">
               <bim-button 
               icon="line-md:arrow-align-top"
               label="Load IFC"
               @click=${() => { loadIfcBtn() }}>
               </bim-button>
+              </bim-toolbar-section>
+              <bim-toolbar-section label="Visibility">
               <bim-button
               label="Hide"
               icon="material-symbols:multimodal-hand-eye"
@@ -558,6 +612,14 @@ export function IFCViewer(props: Props) {
               label="Show All"
               icon="material-symbols:multimodal-hand-eye-outline-rounded"
               @click=${() => { onShowAll() }}
+              >
+              </bim-button>
+              </bim-toolbar-section>
+              <bim-toolbar-section label="Groupings">
+              <bim-button
+              label="Groups"
+              icon="material-symbols:action-key"
+              @click=${() => { onClassifier() }}
               >
               </bim-button>
               </bim-toolbar-section>
@@ -584,8 +646,18 @@ export function IFCViewer(props: Props) {
           toolbar,
           elementPropertyPanel
         }
-
-      }
+      },
+      classifier: {
+        template: `
+        "empty classifierPanel" 1fr
+        "toolbar toolbar" auto
+        /1fr 20rem
+        `,
+        elements: {
+          toolbar,
+          classifierPanel
+        }
+      },
     }
     floatingGrid.layout = "main"
     viewerContainer.appendChild(floatingGrid)
@@ -611,7 +683,6 @@ export function IFCViewer(props: Props) {
       }
     }
   }, [modelDictionaryVersion])
-
 
   return (<
     bim-viewport
