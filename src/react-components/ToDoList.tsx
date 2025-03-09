@@ -4,6 +4,7 @@ import * as OBC from "@thatopen/components"
 import { Project } from "../class/Project";
 import { ToDoItem } from "./ToDoItem";
 import { ToDo } from "../class/ToDo";
+import { TodoCreator, todoTool } from "../bim-components/TodoCreator";
 
 interface Props {
     project: Project
@@ -21,7 +22,7 @@ export function ToDoList(props: Props) {
     //References
     const todoContainer = React.useRef<HTMLDivElement>(null)
     const toDoSectionHeader = React.useRef<HTMLDivElement>(null)
-
+    const todoBtnContainer = React.useRef<HTMLDivElement>(null)
     //States
     const [toDosList, setToDosList] = React.useState<ToDo[]>(props.project.toDosManager.toDosList);
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
@@ -59,7 +60,10 @@ export function ToDoList(props: Props) {
         toDoSectionHeader.current?.appendChild(inputBox)
     }, [])
 
-
+    React.useEffect(()=>{
+        const todoButton = todoTool({components})
+        todoBtnContainer.current?.appendChild(todoButton)
+    }, [])
 
     React.useEffect(() => {
         // Effect used everytime the users state changes
@@ -108,9 +112,12 @@ export function ToDoList(props: Props) {
                     >
                         <span className="material-icons-round">search</span>
                     </div>
-                    <span id="add-todo" className="material-icons-round" onClick={props.onOpenNewForm}>
-                        add
-                    </span>
+                    <div    ref = {todoBtnContainer}>
+                        <span id="add-todo" className="material-icons-round" onClick={props.onOpenNewForm}>
+                            add
+                        </span>
+                    </div>
+
                 </div>
             </div>
             <div
