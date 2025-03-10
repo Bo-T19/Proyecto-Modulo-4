@@ -1,2 +1,2 @@
-export * from "./TodoCreator"
+export * from "./TodosManager"
 export * from "./Template"
