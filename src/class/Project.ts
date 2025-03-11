@@ -3,9 +3,7 @@ export type ProjectStatus = "Pending" | "Active" | "Finished"
 export type ProjectType = "Infrastructure" | "Housing" | "Private sector"
 export type ModelVisibility = "Hidden"|"Shown"
 import { v4 as uuidv4 } from 'uuid'
-
-
-import { IToDosManager, ToDosManager } from './ToDosManager'
+import { ToDo } from './ToDo'
 
 //Project interface
 export interface IProject {
@@ -16,7 +14,7 @@ export interface IProject {
     finishDate: Date
     cost: number
     progress: number
-    toDosManager: IToDosManager
+    toDosList: ToDo[]
     modelDictionary: Record<string, ModelVisibility>
 }
 
@@ -32,12 +30,11 @@ export class Project implements IProject {
     cost: number = 0
     progress: number = 0
     modelDictionary: Record<string, ModelVisibility> = {}
-    
+    toDosList: ToDo[]
 
     //Class internals
     id: string
     initials: string
-    toDosManager: ToDosManager
     color: string
     colorArray: string[] = ["#FF6F61", "#6A5ACD", "#FFB347", "#3498DB", "#27AE60", "#C0392B"]
     modelDictionaryVersion: number
@@ -51,7 +48,7 @@ export class Project implements IProject {
         this.id = id
         this.initials = this.name[0].toUpperCase() + this.name[1].toUpperCase()
         this.color = this.colorArray[ Math.floor(Math.random() * 6)]
-        this.toDosManager = new ToDosManager(id)  
+        this.toDosList = []
         this.modelDictionaryVersion= 0
 
       }

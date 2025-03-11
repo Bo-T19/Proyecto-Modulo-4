@@ -1,6 +1,5 @@
 import { updateDocument } from "../firebase"
 import { IProject, ModelVisibility, Project } from "./Project"
-import { ToDosManager } from "./ToDosManager"
 import * as Firestore from "firebase/firestore"
 import { firebaseDB, getCollection } from "../firebase"
 
@@ -36,7 +35,7 @@ export class ProjectsManager {
 
 
         const project = new Project(data, id)
-        project.toDosManager.toDosList = data.toDosManager.toDosList
+        project.toDosList = data.toDosList
         project.color = this.colorArray[Math.floor(Math.random() * 6)]
         this.list.push(project)
         this.projectNames.push(project.name)
@@ -56,14 +55,14 @@ export class ProjectsManager {
     //Edit project data
     editProject(project: Project, completeData: IProject) {
 
-        completeData.toDosManager.toDosList = [
-            ...project.toDosManager.toDosList,
-            ...completeData.toDosManager.toDosList
+        completeData.toDosList = [
+            ...project.toDosList,
+            ...completeData.toDosList
         ];
 
         //Remove Duplicates based on the Id
-        completeData.toDosManager.toDosList = Array.from(
-            new Map(completeData.toDosManager.toDosList.map(obj => [obj.id, obj])).values()
+        completeData.toDosList = Array.from(
+            new Map(completeData.toDosList.map(obj => [obj.id, obj])).values()
         );
 
         const projectNames = this.list.map((project) => {
@@ -161,7 +160,7 @@ export class ProjectsManager {
                             finishDate: new Date(project.finishDate),
                             cost: project.cost,
                             progress: project.progress,
-                            toDosManager: project.toDosManager,
+                            toDosList: project.toDosList,
                             modelDictionary: project.modelDictionary
                         }
 
@@ -182,7 +181,7 @@ export class ProjectsManager {
                             finishDate: new Date(project.finishDate),
                             cost: project.cost,
                             progress: project.progress,
-                            toDosManager: project.toDosManager,
+                            toDosList: project.toDosList,
                             modelDictionary: project.modelDictionary
                         }
 

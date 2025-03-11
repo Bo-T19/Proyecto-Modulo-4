@@ -1,14 +1,18 @@
 import * as OBC from "@thatopen/components"
 import * as BUI from "@thatopen/ui"
-import { TodoCreator } from "./TodosManager"
+import { ToDosManager } from "./TasksManager"
+import { ProjectsManager } from "../../../class/ProjectsManager"
 
 export interface TodoUIState {
     components: OBC.Components
+    projectsManager : ProjectsManager
 }
 
 export const todoTool = (state: TodoUIState) => {
-    const { components } = state
-    const todoCreator = components.get(TodoCreator)
+    const  components  = state.components
+    const projectsManager = state.projectsManager
+    const todosManager = components.get(ToDosManager)
+    todosManager.setProjectsManager(projectsManager)
 
     //Modal for creating to dos
     const todoModal = BUI.Component.create<HTMLDialogElement>(() => {

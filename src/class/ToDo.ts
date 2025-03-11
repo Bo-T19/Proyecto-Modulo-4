@@ -5,6 +5,7 @@ export type TaskStatus = "Pending" | "Overdue" | "Finished"
 
 //ToDo type
 export interface IToDo {
+    name: string
     description: string
     status: TaskStatus
     date: Date
