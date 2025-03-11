@@ -48,10 +48,12 @@ export class ToDosManager extends OBC.Component {
             data.date = new Date(2024, 1, 1)
         }
 
+        console.log(data)
         const toDo = new ToDo(data)
         project.toDosList.push(toDo)
 
         const staticToDosList = ToDosManager.toPlainObject(project.toDosList)
+        console.log(staticToDosList)
         updateDocument("/projects", projectId, { toDosList: staticToDosList });
     }
 
@@ -87,6 +89,8 @@ export class ToDosManager extends OBC.Component {
         task.setColor()
         this.onToDoEdited()
         const staticToDosList = ToDosManager.toPlainObject(project.toDosList)
+
+        console.log(staticToDosList)
         updateDocument("/projects", projectId, { toDosList: staticToDosList });
     }
 
@@ -109,5 +113,7 @@ export class ToDosManager extends OBC.Component {
                 date: new Date(toDoData.date), 
             });
         });
+
+        return toDosList
     }
 }

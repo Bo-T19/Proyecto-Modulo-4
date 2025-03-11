@@ -149,13 +149,6 @@ export function ProjectDetailsPage(props: Props) {
             {showEditProjectForm ? <EditProjectForm project={project}
                 projectsManager={props.projectsManager}
                 onCloseForm={handleCloseEditProjectForm} /> : <></>}
-            {showNewToDoForm ? <NewToDoForm
-                toDosManager={project.toDosManager}
-                onCloseForm={handleCloseNewToDoForm} /> : <></>}
-            {showEditToDoForm ? < EditToDoForm
-                toDosManager={project.toDosManager}
-                onCloseForm={handleCloseEditToDoForm}
-                id={activeTaskId} /> : <></>}
             {showShowModels ? < ShowModelsWindow
                 project={project}
                 projectsManager={props.projectsManager}
@@ -165,7 +158,7 @@ export function ProjectDetailsPage(props: Props) {
             <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
                 <div style={{ display: "flex", flexDirection: "column", rowGap: 30, overflowY: "auto", height: "100%" }}>
                     <ProjectSummary project={project} projectsManager={props.projectsManager} onOpenForm={onEditProjectClick} />
-                    <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} components={components}/>
+                    <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} components={components} projectsManager={props.projectsManager}/>
                 </div>
 
                 <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />

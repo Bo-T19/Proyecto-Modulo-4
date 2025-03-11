@@ -4,7 +4,8 @@ import * as OBC from "@thatopen/components"
 import { Project } from "../class/Project";
 import { ToDoItem } from "./ToDoItem";
 import { ToDo } from "../class/ToDo";
-import { TodoCreator, todoTool } from "../bim-components/TodoCreator";
+import { ToDosManager, todoTool } from "../bim-components/TodoCreator";
+import { ProjectsManager } from "../class/ProjectsManager";
 
 interface Props {
     project: Project
@@ -12,6 +13,7 @@ interface Props {
     onOpenEditForm: () => void;
     sendId: (id: string) => void;
     components: OBC.Components
+    projectsManager: ProjectsManager
 }
 
 export function ToDoList(props: Props) {
@@ -19,14 +21,20 @@ export function ToDoList(props: Props) {
     //Components instance, this is like the manager
     const components: OBC.Components = props.components
 
+    //Projects Manager and projectId
+    const projectsManager = props.projectsManager
+    const projectId = props.project.id
+
+
     //References
     const todoContainer = React.useRef<HTMLDivElement>(null)
     const toDoSectionHeader = React.useRef<HTMLDivElement>(null)
     const todoBtnContainer = React.useRef<HTMLDivElement>(null)
     //States
-    const [toDosList, setToDosList] = React.useState<ToDo[]>(props.project.toDosManager.toDosList);
+    const [toDosList, setToDosList] = React.useState<ToDo[]>(props.project.toDosList);
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
-
+    console.log(toDosList)
+    /*
     props.project.toDosManager.onToDoCreated = () => {
         setToDosList([...props.project.toDosManager.toDosList])
     }
@@ -34,7 +42,7 @@ export function ToDoList(props: Props) {
     props.project.toDosManager.onToDoEdited = () => {
         setToDosList([...props.project.toDosManager.toDosList])
     }
-
+*/
 
 
     //BIM Table for tasks
@@ -61,7 +69,7 @@ export function ToDoList(props: Props) {
     }, [])
 
     React.useEffect(()=>{
-        const todoButton = todoTool({components})
+        const todoButton = todoTool({components, projectsManager,  projectId})
         todoBtnContainer.current?.appendChild(todoButton)
     }, [])
 
@@ -69,7 +77,8 @@ export function ToDoList(props: Props) {
         // Effect used everytime the users state changes
         const formattedData = toDosList.map(toDo => ({
             data: {
-                Name: toDo.description,
+                Name: toDo.name,
+                Description: toDo.description,
                 Status: toDo.status,
                 Date: toDo.date.toDateString(),
             }

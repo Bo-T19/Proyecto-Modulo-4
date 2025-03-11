@@ -15,6 +15,7 @@ export interface IToDo {
 export class ToDo {
 
     //To satisfy IToDo
+    name: string
     description: string
     status: TaskStatus
     date: Date
@@ -31,6 +32,8 @@ export class ToDo {
 
         this.id =uuidv4()
         this.setColor()
+        console.log(this.status)
+        console.log(this.color)
     }
 
     setColor() {
@@ -53,6 +56,7 @@ export class ToDo {
 
     toPlainObject(): Record<string, any> {
         return {
+            name : this.name,
             description: this.description,
             status: this.status,
             date: this.date.toISOString(), 

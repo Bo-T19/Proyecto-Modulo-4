@@ -35,7 +35,6 @@ export class ProjectsManager {
 
 
         const project = new Project(data, id)
-        project.toDosList = data.toDosList
         project.color = this.colorArray[Math.floor(Math.random() * 6)]
         this.list.push(project)
         this.projectNames.push(project.name)

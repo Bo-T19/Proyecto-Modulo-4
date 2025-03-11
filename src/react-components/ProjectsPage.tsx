@@ -8,7 +8,8 @@ import { ProjectCard } from "./ProjectCard"
 import { CreateProjectForm } from "./CreateProjectForm";
 import { SearchBox } from "./SearchBox";
 import { firebaseDB, getCollection } from "../firebase"
-import { ToDosManager } from "../class/ToDosManager";
+import { ToDosManager } from "../bim-components/TodoCreator/src/TasksManager";
+
 
 interface Props {
     projectsManager: ProjectsManager
@@ -98,7 +99,6 @@ export function ProjectsPage(props: Props) {
             const project: IProject = {
                 ...data,
                 finishDate: (data.finishDate as unknown as Firestore.Timestamp).toDate(),
-                toDosManager: ToDosManager.fromData(doc.id, data.toDosManager)
             }
 
             try {

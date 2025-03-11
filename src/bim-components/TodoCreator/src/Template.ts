@@ -1,16 +1,19 @@
 import * as OBC from "@thatopen/components"
 import * as BUI from "@thatopen/ui"
-import { ToDosManager } from "./TasksManager"
+import { TaskStatus, ToDosManager } from "./TasksManager"
 import { ProjectsManager } from "../../../class/ProjectsManager"
+import { IToDo } from "../../../class/ToDo"
 
 export interface TodoUIState {
     components: OBC.Components
-    projectsManager : ProjectsManager
+    projectsManager: ProjectsManager
+    projectId: string
 }
 
 export const todoTool = (state: TodoUIState) => {
-    const  components  = state.components
+    const components = state.components
     const projectsManager = state.projectsManager
+    const projectId = state.projectId
     const todosManager = components.get(ToDosManager)
     todosManager.setProjectsManager(projectsManager)
 
@@ -18,7 +21,7 @@ export const todoTool = (state: TodoUIState) => {
     const todoModal = BUI.Component.create<HTMLDialogElement>(() => {
         return BUI.html`
        <dialog id="new-todo-modal">
-            <form id="new-todo-form" onsubmit="handleFormSubmit(event)">
+            <form id="new-todo-form" onsubmit={onFormSubmit}>
                 <h2>New Task</h2>
                 <div class="input-list">
                 <div class="form-field-container">
@@ -28,7 +31,7 @@ export const todoTool = (state: TodoUIState) => {
                         </label>
                         <input
                             id="description"
-                            name="description"
+                            name="name"
                             cols="30"
                             rows="1"
                             placeholder="Give your task a name."
@@ -53,9 +56,9 @@ export const todoTool = (state: TodoUIState) => {
                             Status
                         </label>
                         <select id="status" name="status">
-                            <option value="pending">Pending</option>
-                            <option value="overdue">Overdue</option>
-                            <option value="finished">Finished</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Overdue">Overdue</option>
+                            <option value="Finished">Finished</option>
                         </select>
                     </div>
                     <div class="form-field-container">
@@ -66,12 +69,41 @@ export const todoTool = (state: TodoUIState) => {
                         <input id="finishDate" name="finishDate" type="date" />
                     </div>
                     <div style="display: flex; margin: 10px 0px 10px auto; column-gap: 10;">
-                        <button   id="new-todo-cancel-button" type="button" style="background-color: transparent;">
-                            Cancel
-                        </button>
-                        <button type="submit" style="background-color: rgb(18, 145, 18);">
-                            Accept
-                        </button>
+                    <bim-button 
+                        label="Cancel"
+                        @click=${() => {{todoModal.close()}}}
+                    >
+                    </bim-button>
+                    <bim-button 
+                    label="Create"
+                    @click=${() => {{
+                                const newToDOForm = document.getElementById("new-todo-form")
+                                if (!(newToDOForm && newToDOForm instanceof HTMLFormElement)) { return }
+                        
+                                const formData = new FormData(newToDOForm)
+                        
+                                const newToDoData: IToDo =
+                                {
+                                    name: formData.get("name") as string,
+                                    description: formData.get("description") as string,
+                                    status: formData.get("status") as TaskStatus,
+                                    date: new Date(formData.get("date") as string),
+                                }
+                                try {
+                                    const newToDo = todosManager.addToDo(newToDoData, projectId)
+                                    newToDOForm.reset()
+                                    const modal = document.getElementById("new-todo-modal")
+                                    if (!(modal && modal instanceof HTMLDialogElement)) { return }
+                                    modal.close()                                       
+                                }
+                                catch (error) {
+                                    alert(error)
+                                }
+                            }
+                        }
+                    }
+                    >
+                    </bim-button>
                     </div>
                 </div>
             </form>
@@ -80,18 +112,12 @@ export const todoTool = (state: TodoUIState) => {
     })
     //Append the modal to the page
     document.body.appendChild(todoModal)
-
-    //Function for closing the modal
-    const handleCancelButtonClick = ()=> {
-        todoModal.close()
-    }
-    document.getElementById("new-todo-cancel-button")?.addEventListener("click", handleCancelButtonClick);
-
+  
     //Button for showing the modal
     return BUI.Component.create<BUI.Button>(() => {
         return BUI.html`
         <bim-button
-            @click=${()=>todoModal.showModal()}
+            @click=${() => todoModal.showModal()}
             icon="pajamas:todo-done"
             tooltip-title="To-Do"
         >

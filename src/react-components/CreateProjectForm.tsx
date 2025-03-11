@@ -3,7 +3,7 @@ import * as Firestore from "firebase/firestore"
 import { firebaseDB, getCollection } from "../firebase"
 import { IProject, Project, ProjectStatus, ProjectType } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
-import { ToDosManager } from "../class/ToDosManager";
+
 
 
 interface Props {
@@ -32,7 +32,7 @@ export function CreateProjectForm(props: Props) {
             finishDate: new Date(formData.get("date") as string),
             cost: 0,
             progress: 0,
-            toDosManager: { toDosList: [] },
+            toDosList: [],
             modelDictionary: {}
         }
         try {
