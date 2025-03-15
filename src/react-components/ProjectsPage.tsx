@@ -96,11 +96,12 @@ export function ProjectsPage(props: Props) {
         const firebaseProjects = await Firestore.getDocs(projectsCollection)
         for (const doc of firebaseProjects.docs) {
             const data = doc.data()
+            const toDosList = ToDosManager.fromData(data.toDosList ?? []);
+            data.toDosList = toDosList
             const project: IProject = {
                 ...data,
                 finishDate: (data.finishDate as unknown as Firestore.Timestamp).toDate(),
             }
-
             try {
                 props.projectsManager.newProject(project, doc.id)
             }

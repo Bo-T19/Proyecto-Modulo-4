@@ -31,16 +31,15 @@ export class ToDosManager extends OBC.Component {
     onToDoEdited = () => { }
 
     //Set the projects manager (Super important!)
-    setProjectsManager( projectsManager: ProjectsManager)
-    {
+    setProjectsManager(projectsManager: ProjectsManager) {
         this.projectsManager = projectsManager
     }
-    
+
     //Methods
     addToDo(data: IToDo, projectId: string) {
 
         const project = this.projectsManager.getProject(projectId)
-        if(!project) return
+        if (!project) return
 
         let color: string
 
@@ -61,7 +60,7 @@ export class ToDosManager extends OBC.Component {
     getTaskById(taskId: string, projectId: string) {
 
         const project = this.projectsManager.getProject(projectId)
-        if(!project) return
+        if (!project) return
 
         const task = project.toDosList.find((task) => {
             return task.id === taskId
@@ -70,10 +69,10 @@ export class ToDosManager extends OBC.Component {
         return task
     }
 
-    editTask(taskId: string, projectId: string ,data: IToDo) {
+    editTask(taskId: string, projectId: string, data: IToDo) {
 
         const project = this.projectsManager.getProject(projectId)
-        if(!project) return
+        if (!project) return
 
         const task = this.getTaskById(taskId, projectId)!
 
@@ -104,16 +103,24 @@ export class ToDosManager extends OBC.Component {
 
     // Rebuild
     static fromData(data: any) {
-        const toDosList = (data || []).map((toDoData: any) => {
+        if (typeof data === 'object' && data !== null && 'toDosList' in data) {
+            data = data.toDosList;
+        }
 
+        if (!Array.isArray(data)) {
+            console.log("Error: fromData esperaba un array, pero recibió:", data);
+            return [];
+        }
+
+        const toDosList = (data || []).map((toDoData: any) => {
             return new ToDo({
-                name : toDoData.name,
+                name: toDoData.name,
                 description: toDoData.description,
                 status: toDoData.status as TaskStatus,
-                date: new Date(toDoData.date), 
+                date: new Date(toDoData.date),
             });
         });
 
-        return toDosList
+        return toDosList;
     }
 }

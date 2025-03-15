@@ -74,7 +74,7 @@ export function ToDoList(props: Props) {
     }, [])
 
     React.useEffect(() => {
-        // Effect used everytime the users state changes
+        // Effect used everytime the toDosList state changes
         const formattedData = toDosList.map(toDo => ({
             data: {
                 Name: toDo.name,
@@ -88,6 +88,7 @@ export function ToDoList(props: Props) {
         if (table) {
             table.data = formattedData;
         }
+        console.log(toDosList)
 
     }, [toDosList]);
 
