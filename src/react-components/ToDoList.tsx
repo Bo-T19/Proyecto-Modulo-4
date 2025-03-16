@@ -35,16 +35,6 @@ export function ToDoList(props: Props) {
     const [toDosList, setToDosList] = React.useState<ToDo[]>(props.project.toDosList);
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
     console.log(toDosList)
-    /*
-    props.project.toDosManager.onToDoCreated = () => {
-        setToDosList([...props.project.toDosManager.toDosList])
-    }
-
-    props.project.toDosManager.onToDoEdited = () => {
-        setToDosList([...props.project.toDosManager.toDosList])
-    }
-*/
-
 
     //BIM Table for tasks
     const tasksTable = BUI.Component.create<BUI.Table>(() => {
@@ -75,7 +65,7 @@ export function ToDoList(props: Props) {
     }, [])
 
     React.useEffect(() => {
-        toDosManager.onToDoCreated = () => {
+        toDosManager.onToDoModified = () => {
             setToDosList([...props.project.toDosList]); 
         };
     }, []);
@@ -84,16 +74,45 @@ export function ToDoList(props: Props) {
     React.useEffect(() => { 
         const formattedData = toDosList.map(toDo => ({
             data: {
+                Id: toDo.id,
                 Name: toDo.name,
                 Description: toDo.description,
                 Status: toDo.status,
                 Date: toDo.date.toDateString(),
+                Options: ""
             }
         }));
 
         const table = document.querySelector("bim-table");
         if (table) {
             table.data = formattedData;
+            table.hiddenColumns = ["Id"]
+            table.dataTransform.Options = (value, rowData)=>{
+                return BUI.html`
+                <div
+                style = "display: flex; gap: 2px;"
+                >
+                    <bim-button
+                    icon="material-symbols:edit-square-outline"
+                    tooltip-title="Edit"
+                    @click=${() => {{    
+                        const taskId = rowData.Id as string
+                        toDosManager.editTask(taskId,projectId)   
+                        }}}
+                    >
+                    </bim-button>
+                    <bim-button
+                        icon="material-symbols:delete"
+                        tooltip-title="Delete"
+                        @click=${() => {{           
+                        const taskId = rowData.Id as string
+                        toDosManager.deleteTask(taskId,projectId)
+                        }}}
+                    >
+                    </bim-button>
+                    </div> 
+            `;
+            }
         }
         console.log(toDosList)
 
@@ -130,9 +149,6 @@ export function ToDoList(props: Props) {
                         <span className="material-icons-round">search</span>
                     </div>
                     <div    ref = {todoBtnContainer}>
-                        <span id="add-todo" className="material-icons-round" onClick={props.onOpenNewForm}>
-                            add
-                        </span>
                     </div>
 
                 </div>

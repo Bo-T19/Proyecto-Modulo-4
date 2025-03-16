@@ -35,7 +35,7 @@ export function EditProjectForm(props: Props) {
             finishDate: new Date(formData.get("date") as string),
             cost: formData.get("cost") as unknown as number,
             progress: formData.get("progress") as unknown as number,
-            toDosManager: project.toDosManager,
+            toDosList: project.toDosList,
             modelDictionary: project.modelDictionary
         }
         try {

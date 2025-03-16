@@ -26,7 +26,7 @@
 
 #app {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 180px 1fr;
   grid-template-areas: 'sidebar content';
   height: 100vh;
   background-color: var(--background);
@@ -91,7 +91,6 @@ button:hover {
   display: flex;
   flex-direction: column;
   row-gap: 40px;
-
 }
 
 #nav-buttons {
