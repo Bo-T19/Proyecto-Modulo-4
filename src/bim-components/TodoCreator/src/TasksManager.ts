@@ -43,7 +43,7 @@ export class ToDosManager extends OBC.Component {
 
         let color: string
 
-        if (data.date.toDateString() == "Invalid Date") {
+        if (isNaN(data.date.getDate())) {
             data.date = new Date(2024, 1, 1)
         }
 

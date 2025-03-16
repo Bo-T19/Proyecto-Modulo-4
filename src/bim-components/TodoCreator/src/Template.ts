@@ -62,16 +62,22 @@ export const todoTool = (state: TodoUIState) => {
                         </select>
                     </div>
                     <div class="form-field-container">
-                        <label for="finishDate">
+                        <label for="date">
                             <span class="material-icons-round">calendar_month</span>
                             Finish Date
                         </label>
-                        <input id="finishDate" name="finishDate" type="date" />
+                        <input id="date" name="date" type="date" />
                     </div>
-                    <div style="display: flex; margin: 10px 0px 10px auto; column-gap: 10;">
-                    <bim-button 
+                    <div style="display: flex; margin: 10px 0px 10px auto; gap: 10px;">
+                    <bim-button
+                        style="background-color: red;"
                         label="Cancel"
-                        @click=${() => {{todoModal.close()}}}
+                        @click=${() => {{                         
+                            const modal = document.getElementById("new-todo-modal")
+                            if (!(modal && modal instanceof HTMLDialogElement)) { return }
+                            modal.close()
+                            modal.remove()
+                            }}}
                     >
                     </bim-button>
                     <bim-button 
@@ -89,12 +95,14 @@ export const todoTool = (state: TodoUIState) => {
                                     status: formData.get("status") as TaskStatus,
                                     date: new Date(formData.get("date") as string),
                                 }
+                                console.log(newToDoData)
                                 try {
                                     const newToDo = todosManager.addToDo(newToDoData, projectId)
                                     newToDOForm.reset()
                                     const modal = document.getElementById("new-todo-modal")
                                     if (!(modal && modal instanceof HTMLDialogElement)) { return }
-                                    modal.close()                                       
+                                    modal.close()    
+                                    modal.remove()                                   
                                 }
                                 catch (error) {
                                     alert(error)
@@ -110,14 +118,17 @@ export const todoTool = (state: TodoUIState) => {
         </dialog>
         `
     })
-    //Append the modal to the page
-    document.body.appendChild(todoModal)
+    
   
     //Button for showing the modal
     return BUI.Component.create<BUI.Button>(() => {
         return BUI.html`
         <bim-button
-            @click=${() => todoModal.showModal()}
+            @click=${() => {{           
+                //Append the modal to the page
+                document.body.appendChild(todoModal)
+                todoModal.showModal()
+            }}}
             icon="pajamas:todo-done"
             tooltip-title="To-Do"
         >

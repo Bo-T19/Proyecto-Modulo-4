@@ -76,7 +76,7 @@ export function ToDoList(props: Props) {
 
     React.useEffect(() => {
         toDosManager.onToDoCreated = () => {
-            setToDosList([...props.project.toDosList]); // 🔥 Se actualiza solo cuando hay cambios
+            setToDosList([...props.project.toDosList]); 
         };
     }, []);
 
