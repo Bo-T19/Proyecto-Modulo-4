@@ -12,14 +12,15 @@ interface Props {
     onOpenNewForm: () => void;
     onOpenEditForm: () => void;
     sendId: (id: string) => void;
-    components: OBC.Components
-    projectsManager: ProjectsManager
+    components: OBC.Components;
+    projectsManager: ProjectsManager;
 }
 
 export function ToDoList(props: Props) {
 
-    //Components instance, this is like the manager
+    //Components instance, this is like the manager. Then we get the toDosManager
     const components: OBC.Components = props.components
+    const toDosManager = components.get(ToDosManager)
 
     //Projects Manager and projectId
     const projectsManager = props.projectsManager
@@ -74,7 +75,13 @@ export function ToDoList(props: Props) {
     }, [])
 
     React.useEffect(() => {
-        // Effect used everytime the toDosList state changes
+        toDosManager.onToDoCreated = () => {
+            setToDosList([...props.project.toDosList]); // 🔥 Se actualiza solo cuando hay cambios
+        };
+    }, []);
+
+    // Effect used everytime the toDosList state changes
+    React.useEffect(() => { 
         const formattedData = toDosList.map(toDo => ({
             data: {
                 Name: toDo.name,

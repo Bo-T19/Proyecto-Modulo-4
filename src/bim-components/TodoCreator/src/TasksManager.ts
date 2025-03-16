@@ -52,8 +52,8 @@ export class ToDosManager extends OBC.Component {
         project.toDosList.push(toDo)
 
         const staticToDosList = ToDosManager.toPlainObject(project.toDosList)
-        console.log(staticToDosList)
         updateDocument("/projects", projectId, { toDosList: staticToDosList });
+        this.onToDoCreated()
     }
 
 
