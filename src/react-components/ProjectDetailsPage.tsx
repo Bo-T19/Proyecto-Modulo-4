@@ -4,8 +4,6 @@ import { ProjectsManager } from "../class/ProjectsManager";
 import { ProjectSummary } from "./ProjectSummary";
 import { EditProjectForm } from "./EditProjectForm";
 import { ToDoList } from "./ToDoList";
-import { NewToDoForm } from "./NewToDoForm";
-import { EditToDoForm } from "./EditToDoForm"
 import { IFCViewer } from "./IFCViewer";
 import * as OBC from "@thatopen/components"
 import { deleteDocument } from "../firebase";

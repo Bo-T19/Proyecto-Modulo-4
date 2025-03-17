@@ -360,40 +360,52 @@ export function IFCViewer(props: Props) {
 
     ifcStreamer.url = props.project.name + "/Tiles/"
 
-    //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
-    async function loadTiledModel(geometryURL: string, propertiesURL?: string) {
-      const rawGeometryData = await fetch(geometryURL);
-      const geometryData = await rawGeometryData.json();
-      let propertiesData;
-      if (propertiesURL) {
-        const rawPropertiesData = await fetch(propertiesURL);
-        propertiesData = await rawPropertiesData.json();
-      }
-      const model = await ifcStreamer.load(geometryData, true, propertiesData);
-
-      const indexer = components.get(OBC.IfcRelationsIndexer)
-      await indexer.process(model)
-
-      //Classifier
-      /*
-      const classifier = components.get(OBC.Classifier)
-      await classifier.bySpatialStructure(model)
-      classifier.byEntity(model)
-
-      const classifications = [
-        { system: "entities", label: "Entities" },
-        { system: "spatialStructures", label: "Spatial Containers" },
-      ]
-      if (updateClassificationsTree) {
-        updateClassificationsTree({ classifications })
-      }
-        */
-    }
-
-    //Then the fragmentsManager. Then, add the funcionality for onFragmentsLoaded
-    //A fragment is a THREEJS representation of an IFC
+    //FragmentsManager here, it handles all the models
     const fragmentsManager = components.get(OBC.FragmentsManager)
+    fragmentsManager.onFragmentsLoaded.add(async (model) => {
+      console.log(model)
+      world.scene.three.add(model)}
+    )
 
+    //Important, whenever there are changes in the size of the app
+    viewerContainer.addEventListener("resize", () => {
+      rendererComponent.resize()
+      cameraComponent.updateAspect()
+    })
+  }
+
+   //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
+   async function loadTiledModel(geometryURL: string, propertiesURL?: string) {
+    const ifcStreamer = components.get(OBCF.IfcStreamer)
+    const rawGeometryData = await fetch(geometryURL);
+    const geometryData = await rawGeometryData.json();
+    let propertiesData;
+    if (propertiesURL) {
+      const rawPropertiesData = await fetch(propertiesURL);
+      propertiesData = await rawPropertiesData.json();
+    }
+    const model = await ifcStreamer.load(geometryData, true, propertiesData);
+
+    const indexer = components.get(OBC.IfcRelationsIndexer)
+    await indexer.process(model)
+
+    //Classifier
+    /*
+    const classifier = components.get(OBC.Classifier)
+    await classifier.bySpatialStructure(model)
+    classifier.byEntity(model)
+
+    const classifications = [
+      { system: "entities", label: "Entities" },
+      { system: "spatialStructures", label: "Spatial Containers" },
+    ]
+    if (updateClassificationsTree) {
+      updateClassificationsTree({ classifications })
+    }
+      */
+  }
+
+  const loadShownModels = async () => {
     for (const [key, value] of Object.entries(props.project.modelDictionary)) {
 
       if (value === "Shown") {
@@ -422,7 +434,6 @@ export function IFCViewer(props: Props) {
             model.setLocalProperties(propertiesJson)
           }
           
-          world.scene.three.add(model)
           const indexer = components.get(OBC.IfcRelationsIndexer)
           if (model.hasProperties) {
             await indexer.process(model)
@@ -445,15 +456,7 @@ export function IFCViewer(props: Props) {
           }
         }
       }
-      rendererComponent.resize();
-      cameraComponent.updateAspect();
     }
-
-    //Important, whenever there are changes in the size of the app
-    viewerContainer.addEventListener("resize", () => {
-      rendererComponent.resize()
-      cameraComponent.updateAspect()
-    })
   }
 
   //Functionality for the load button
@@ -593,7 +596,7 @@ export function IFCViewer(props: Props) {
               <bim-button 
               icon="line-md:arrow-align-top"
               label="Load IFC"
-              @click=${() => { loadIfcBtn() }}>
+              @click=${async () => { await loadIfcBtn() }}>
               </bim-button>
               </bim-toolbar-section>
               <bim-toolbar-section label="Visibility">
@@ -683,6 +686,12 @@ export function IFCViewer(props: Props) {
         components.dispose()
       }
     }
+  }, [])
+
+
+  React.useEffect(() => {
+    loadShownModels()
+    
   }, [modelDictionaryVersion])
 
   return (<
