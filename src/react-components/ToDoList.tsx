@@ -34,7 +34,6 @@ export function ToDoList(props: Props) {
     //States
     const [toDosList, setToDosList] = React.useState<ToDo[]>(props.project.toDosList);
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
-    console.log(toDosList)
 
     //BIM Table for tasks
     const tasksTable = BUI.Component.create<BUI.Table>(() => {
@@ -114,7 +113,6 @@ export function ToDoList(props: Props) {
             `;
             }
         }
-        console.log(toDosList)
 
     }, [toDosList]);
 

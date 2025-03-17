@@ -94,8 +94,7 @@ export const todoTool = (state: TodoUIState) => {
                                     description: formData.get("description") as string,
                                     status: formData.get("status") as TaskStatus,
                                     date: new Date(formData.get("date") as string),
-                                }
-                                console.log(newToDoData)
+                                }                         
                                 try {
                                     const newToDo = todosManager.addToDo(newToDoData, projectId)
                                     newToDOForm.reset()

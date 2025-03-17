@@ -52,7 +52,6 @@ export class ToDosManager extends OBC.Component {
             throw new Error(`The name must have at least 5 characters`)
         }
 
-        console.log(data)
         const toDo = new ToDo(data)
         project.toDosList.push(toDo)
 
@@ -153,7 +152,6 @@ export class ToDosManager extends OBC.Component {
                                 date: new Date(formData.get("date") as string),
                             }
 
-                            console.log(editToDoData)
                             try {
                                 if (editToDoData.date.toDateString() == "Invalid Date") {
                                     editToDoData.date = new Date(2024, 1, 1)
@@ -167,7 +165,6 @@ export class ToDosManager extends OBC.Component {
                                 this.onToDoModified()
                                 const staticToDosList = ToDosManager.toPlainObject(project.toDosList)
                         
-                                console.log(staticToDosList)
                                 updateDocument("/projects", projectId, { toDosList: staticToDosList });
                             }
                             catch (error) {

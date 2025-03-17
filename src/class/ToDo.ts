@@ -32,8 +32,6 @@ export class ToDo {
 
         this.id =uuidv4()
         this.setColor()
-        console.log(this.status)
-        console.log(this.color)
     }
 
     setColor() {
