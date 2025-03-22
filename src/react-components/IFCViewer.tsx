@@ -153,7 +153,7 @@ export function IFCViewer(props: Props) {
       console.log("An error ocurred:" + error)
     }
 
-
+    /*
     //Then, create the fragments group and load it to Firbase. Initialize the components and thee fragments manager
     const fragmentsManager = components.get(OBC.FragmentsManager)
 
@@ -179,15 +179,7 @@ export function IFCViewer(props: Props) {
     } else {
       console.log("No hay propiedades locales para convertir en JSON.");
     }
-
-    props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
-    setModelDictionaryVersion(props.project.modelDictionaryVersion)
-
-    console.log(props.project.modelDictionaryVersion)
-    await updateDocument("/projects", props.project.id, {
-      modelDictionary: props.project.modelDictionary
-    })
-
+*/
   }
 
   //Convert properties to tiles function
@@ -463,9 +455,16 @@ export function IFCViewer(props: Props) {
   const loadIfcBtn = async () => {
     const result = await props.projectsManager.loadIFC();
     const blob = new Blob([result?.buffer!])
-    await uploadFile(props.project.name + "/" + result?.fileName!.slice(0, -4) + "/" + result?.fileName!, blob)
+    const filePath = result?.fileName! as string
+    await uploadFile(props.project.name + "/" + filePath + "/" + result?.fileName!, blob)
     await tileGeometry(result?.fileName!, result?.buffer!)
     await tileProperties(result?.fileName!, result?.buffer!)
+    props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
+    setModelDictionaryVersion(props.project.modelDictionaryVersion)
+    console.log(props.project.modelDictionaryVersion)
+    await updateDocument("/projects", props.project.id, {
+      modelDictionary: props.project.modelDictionary
+    })
     console.log("Tiling done!")
   };
 
