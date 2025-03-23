@@ -10,6 +10,7 @@ import { ProjectsManager } from "./class/ProjectsManager"
 import { ProjectDetailsPage } from "./react-components/ProjectDetailsPage"
 import { UsersPage } from "./react-components/UsersPage"
 import { UsersManager } from "./class/UsersManager"
+import { ProjectModelsPage } from "./react-components/ProjectModelsPage"
 
 //BIM UI
 
@@ -41,6 +42,7 @@ appRoot.render(
             <Router.Routes>
                 <Router.Route path="/" element={<ProjectsPage projectsManager={projectsManager} />} />
                 <Router.Route path="/project/:id" element={<ProjectDetailsPage  projectsManager={projectsManager}/>} />
+                <Router.Route path="/project/:id/viewer" element={<ProjectModelsPage  projectsManager={projectsManager}/>}/>
                 <Router.Route path="/users" element ={<UsersPage usersManager={usersManager}/>}/>
             </Router.Routes>
         </Router.BrowserRouter>

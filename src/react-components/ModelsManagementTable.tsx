@@ -341,13 +341,13 @@ export function ModelsManagementTable(props: Props) {
             }
         }
     }, [modelDictionaryVersion])
-    return (<div className= "dashboard-card"style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "10px"}}>
+    return (
+    <div className= "dashboard-card"style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "10px"}}>
         <div>
             <h4>Models</h4>
         </div>
         <div ref={uploadButtonContainer}></div>
         <div className="model-list" ref={modelsTableContainer}></div>
     </div>
-    
     )
 }

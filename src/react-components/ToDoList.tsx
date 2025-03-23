@@ -10,7 +10,6 @@ interface Props {
     project: Project
     onOpenNewForm: () => void;
     onOpenEditForm: () => void;
-    sendId: (id: string) => void;
     components: OBC.Components;
     projectsManager: ProjectsManager;
 }
@@ -155,7 +154,7 @@ export function ToDoList(props: Props) {
                 style={{
                     display: "flex",
                     flexDirection: "column",
-                    padding: "10px 30px",
+                    padding: "10px 10px",
                     rowGap: 20,
                     overflowY: "auto",
                     height: "auto"

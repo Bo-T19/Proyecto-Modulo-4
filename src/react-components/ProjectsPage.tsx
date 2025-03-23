@@ -125,7 +125,6 @@ export function ProjectsPage(props: Props) {
 
                 <SearchBox onChange={(value) => onProjectSearch(value)} typeOfSearchBox="project" />
 
-
                 <div
                     style={{
                         display: "flex",

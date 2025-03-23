@@ -51,7 +51,6 @@ export function ShowModelsWindow(props: Props) {
         const columns = [
             { name: "Name", width: "300px" },
             { name: "Visibility", width: "100px" },
-            { name: "Delete", width: "80px" }
         ];
 
         modelsTable.columns = columns;

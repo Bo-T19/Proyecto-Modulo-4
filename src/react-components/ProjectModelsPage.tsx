@@ -14,7 +14,9 @@ interface Props {
     projectsManager: ProjectsManager
 }
 
-export function ProjectDetailsPage(props: Props) {
+export function ProjectModelsPage(props: Props) {
+
+
     //Components instance, important for the IFCViewer and the ToDos
     const components = new OBC.Components();
 
@@ -23,31 +25,10 @@ export function ProjectDetailsPage(props: Props) {
     const project = props.projectsManager.getProject(routeParams.id)
     if (!project) { return (<p> Project couldn't be found</p>) }
 
-    //State for the EditProjectForm and methods for showing it, also for NewToDoForm and EditToDoForm
-    const [showEditProjectForm, setEditProjectForm] = React.useState(false)
+    //State for the ModelsVisibilityForm and methods for showing it, also for NewToDoForm and EditToDoForm
+    const [showShowModels, setShowModels] = React.useState(false)
     const [showNewToDoForm, setNewToDoForm] = React.useState(false)
     const [showEditToDoForm, setEditToDoForm] = React.useState(false)
-    const [showShowModels, setShowModels] = React.useState(false)
-    const [activeTaskId, setActiveTaskId] = React.useState<string>("")
-
-    //EditProjectForm
-    const handleCloseEditProjectForm = () => {
-        setEditProjectForm(false);
-    }
-
-    const onEditProjectClick = () => {
-        setEditProjectForm(true);
-    }
-
-    React.useEffect(() => {
-        if (showEditProjectForm) {
-            const modal = document.getElementById("edit-project-modal");
-            if (modal && modal instanceof HTMLDialogElement) {
-                modal.showModal();
-            }
-        }
-    }, [showEditProjectForm]);
-
 
     //NewToDoForm
     const onNewToDoClick = () => {
@@ -63,7 +44,6 @@ export function ProjectDetailsPage(props: Props) {
         }
     }, [showNewToDoForm]);
 
-
     //EditToDoForm
     const handleCloseEditToDoForm = () => {
         setEditToDoForm(false);
@@ -74,6 +54,25 @@ export function ProjectDetailsPage(props: Props) {
         setEditToDoForm(true);
     }
 
+        //ShowModelsWindow
+        const handleCloseShowModels = () => {
+            setShowModels(false)
+        }
+    
+        const onShowModelsClick = () => {
+            setShowModels(true)
+        }
+    
+        React.useEffect(() => {
+            if (showShowModels) {
+                const modal = document.getElementById("show-models-modal");
+                if (modal && modal instanceof HTMLDialogElement) {
+                    modal.showModal();
+                }
+            }
+        }, [showShowModels]);
+    
+
     React.useEffect(() => {
         if (showEditToDoForm) {
             const modal = document.getElementById("edit-todo-modal");
@@ -83,14 +82,6 @@ export function ProjectDetailsPage(props: Props) {
         }
     }, [showEditToDoForm]);
 
-    //ShowModelsWindow
-    const handleCloseShowModels = () => {
-        setShowModels(false)
-    }
-
-    const onShowModelsClick = () => {
-        setShowModels(true)
-    }
 
     React.useEffect(() => {
         if (showShowModels) {
@@ -101,16 +92,8 @@ export function ProjectDetailsPage(props: Props) {
         }
     }, [showShowModels]);
 
-
-    //Firebase
-    const navigateTo = Router.useNavigate()
-    props.projectsManager.onProjectDeleted = async (id) => {
-        await deleteDocument("/projects", id)
-        navigateTo("/")
-    }
-
     return (
-        <div className="page" id="project-details" >
+        <div className="page" id="project-models" >
             <header>
                 <div>
                     <h2 data-project-info="name">{project.name}</h2>
@@ -118,24 +101,25 @@ export function ProjectDetailsPage(props: Props) {
                         {project.description}
                     </p>
                 </div>
-
-                <Router.Link to={`/project/${project.id}/viewer`} key={project.id} >
-                    <button id="show-models" className="btn-secondary">
-                        <p style={{ width: "100%" }}>Show models</p>
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <Router.Link to={`/project/${project.id}`} key={project.id} >
+                        <button id="go-to-project-details">
+                            <p style={{ width: "100%" }}>Project page</p>
+                        </button>
+                    </Router.Link>
+                    <button id="show-models" onClick={onShowModelsClick} className="btn-secondary">
+                        <p style={{ width: "100%" }}>Models visibility</p>
                     </button>
-                </Router.Link>
-
-            </header>
-            {showEditProjectForm ? <EditProjectForm project={project}
-                projectsManager={props.projectsManager}
-                onCloseForm={handleCloseEditProjectForm} /> : <></>}
-           
-            <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
-                <div style={{ display: "flex", flexDirection: "column", rowGap: 30, overflowY: "auto", height: "100%" }}>
-                    <ProjectSummary project={project} projectsManager={props.projectsManager} onOpenForm={onEditProjectClick} />
-                    <ModelsManagementTable project={project} projectsManager={props.projectsManager} components={components} />
                 </div>
+            </header>
+            {showShowModels ? < ShowModelsWindow
+                project={project}
+                projectsManager={props.projectsManager}
+                onCloseForm={handleCloseShowModels}
+            /> : <></>}
+            <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
                 <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} />
+                <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />
             </div>
         </div>
     )

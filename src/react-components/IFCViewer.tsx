@@ -17,8 +17,6 @@ interface Props {
   components: OBC.Components
 }
 export function IFCViewer(props: Props) {
-  //Variable that will help me control when a model its loaded to the scene
-  let addModelToTheScene = false;
 
   //State for tracking the modelDictionary
   const [modelDictionaryVersion, setModelDictionaryVersion] = React.useState(props.project.modelDictionaryVersion);
@@ -65,186 +63,6 @@ export function IFCViewer(props: Props) {
       throw error;
     }
   };
-
-
-  //Convert geometry to tiles function
-  const tileGeometry = async (filePath: string, ifcBuffer: ArrayBuffer) => {
-    const tiler = components.get(OBC.IfcGeometryTiler);
-
-    const wasm = {
-      path: "https://unpkg.com/web-ifc@0.0.57/",
-      absolute: true,
-    };
-
-    tiler.settings.wasm = wasm;
-
-    console.log("Configuración WASM:", tiler.settings.wasm);
-    tiler.settings.minGeometrySize = 20;
-    tiler.settings.minAssetsSize = 1000;
-
-
-    let files: { name: string; bits: (Uint8Array | string)[] }[] = [];
-    let geometriesData: OBC.StreamedGeometries = {};
-    let geometryFilesCount = 1;
-
-
-    tiler.onGeometryStreamed.add((geometry) => {
-      const { buffer, data } = geometry;
-      const bufferFileName = `${filePath}-processed-geometries-${geometryFilesCount}`;
-      for (const expressID in data) {
-        const value = data[expressID];
-        value.geometryFile = bufferFileName;
-        geometriesData[expressID] = value;
-      }
-      files.push({ name: bufferFileName, bits: [buffer] });
-      geometryFilesCount++;
-    });
-
-
-    let assetsData: OBC.StreamedAsset[] = [];
-
-    tiler.onAssetStreamed.add((assets) => {
-      assetsData = [...assetsData, ...assets];
-    });
-
-
-    tiler.onIfcLoaded.add((groupBuffer) => {
-      files.push({
-        name: `${filePath}-processed-global`,
-        bits: [groupBuffer],
-      });
-    });
-
-    tiler.onProgress.add((progress) => {
-      if (progress !== 1) return;
-      setTimeout(async () => {
-        const processedData = {
-          geometries: geometriesData,
-          assets: assetsData,
-          globalDataFileId: `${filePath}-processed-global`,
-        };
-        files.push({
-          name: `${filePath}-processed.json`,
-          bits: [JSON.stringify(processedData)],
-        });
-
-
-        await Promise.all(
-          files.map(({ name, bits }) =>
-            uploadFile(props.project.name + "/Tiles/" + name, new Blob([bits[0]]))
-          )
-        );
-
-
-        assetsData = [];
-        geometriesData = {};
-        files = [];
-        geometryFilesCount = 1;
-      });
-    });
-
-    const ifcArrayBuffer = new Uint8Array(ifcBuffer);
-
-    //Then, try to tile
-    try {
-      // This triggers the conversion, so the listeners start to be called
-      await tiler.streamFromBuffer(ifcArrayBuffer);
-    }
-    catch (error) {
-      console.log(error)
-    }
-  }
-
-  //Convert properties to tiles function
-  const tileProperties = async (filePath: string, ifcBuffer: ArrayBuffer) => {
-    const propsTiler = components.get(OBC.IfcPropertiesTiler);
-    const projectName = props.project.name;
-
-    propsTiler.settings.wasm = {
-      path: "https://unpkg.com/web-ifc@0.0.57/",
-      absolute: true,
-    };
-
-    interface StreamedProperties {
-      types: {
-        [typeID: number]: number[];
-      };
-
-      ids: {
-        [id: number]: number;
-      };
-
-      indexesFile: string;
-    }
-
-    const jsonFile: StreamedProperties = {
-      types: {},
-      ids: {},
-      indexesFile: `${filePath.slice(0, -4)}.ifc-processed-properties-indexes`,
-    };
-
-
-    let counter = 0;
-
-    const files: { name: string; bits: Blob }[] = [];
-
-    propsTiler.onPropertiesStreamed.add(async (props) => {
-      if (!jsonFile.types[props.type]) {
-        jsonFile.types[props.type] = [];
-      }
-      jsonFile.types[props.type].push(counter);
-
-      for (const id in props.data) {
-        jsonFile.ids[id] = counter;
-      }
-
-      const name = `${filePath.slice(0, -4)}.ifc-processed-properties-${counter}`;
-      const bits = new Blob([JSON.stringify(props.data)]);
-      files.push({ bits, name });
-
-      counter++;
-    });
-
-    propsTiler.onProgress.add(async (progress) => {
-      console.log(progress);
-    });
-
-
-    propsTiler.onIndicesStreamed.add(async (props) => {
-      files.push({
-        name: `${filePath.slice(0, -4)}.ifc-processed-properties.json`,
-        bits: new Blob([JSON.stringify(jsonFile)]),
-      });
-
-      const relations = components.get(OBC.IfcRelationsIndexer);
-      const serializedRels = relations.serializeRelations(props);
-
-      files.push({
-        name: `${filePath.slice(0, -4)}.ifc-processed-properties-indexes`,
-        bits: new Blob([serializedRels]),
-      });
-
-
-      await Promise.all(
-        files.map(({ name, bits }) =>
-          uploadFile(projectName + "/Tiles/" + name, bits)
-        )
-      );
-    });
-
-    const ifcArrayBuffer = new Uint8Array(ifcBuffer);
-
-
-    //Then, try to tile the file
-    try {
-      // This triggers the conversion, so the listeners start to be called
-      await propsTiler.streamFromBuffer(ifcArrayBuffer);
-    }
-    catch (error) {
-      console.log("An error ocurred:" + error)
-    }
-  }
-
 
   //Classifications
   const [classificationsTree, updateClassificationsTree] = CUI.tables.classificationTree({
@@ -322,15 +140,12 @@ export function IFCViewer(props: Props) {
       }
     };
 
-
     ifcStreamer.url = props.project.name + "/Tiles/"
 
     //FragmentsManager here, it handles all the models
     const fragmentsManager = components.get(OBC.FragmentsManager)
     fragmentsManager.onFragmentsLoaded.add(async (model) => {
-      if (addModelToTheScene) {
-        world.scene.three.add(model)
-      }
+      world.scene.three.add(model)
     }
     )
 
@@ -342,7 +157,7 @@ export function IFCViewer(props: Props) {
   }
 
   //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
-  async function loadTiledModel(geometryURL: string, propertiesURL?: string) {
+  const loadTiledModel = async (geometryURL: string, propertiesURL?: string) => {
     const ifcStreamer = components.get(OBCF.IfcStreamer)
     const rawGeometryData = await fetch(geometryURL);
     const geometryData = await rawGeometryData.json();
@@ -357,7 +172,7 @@ export function IFCViewer(props: Props) {
     await indexer.process(model)
 
     //Classifier
-    /*
+    
     const classifier = components.get(OBC.Classifier)
     await classifier.bySpatialStructure(model)
     classifier.byEntity(model)
@@ -369,7 +184,7 @@ export function IFCViewer(props: Props) {
     if (updateClassificationsTree) {
       updateClassificationsTree({ classifications })
     }
-      */
+      
   }
 
   const loadShownModels = async () => {
@@ -386,7 +201,6 @@ export function IFCViewer(props: Props) {
           console.log("Tiled model loaded")
         }
         catch (error) {
-          addModelToTheScene = true;
           const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
 
           const propertiesBuffer = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + "frag-props.json");
@@ -405,7 +219,7 @@ export function IFCViewer(props: Props) {
             await indexer.process(model)
 
             //Classifier
-            /*
+            
             const classifier = components.get(OBC.Classifier)
             await classifier.bySpatialStructure(model)
             classifier.byEntity(model)
@@ -417,33 +231,13 @@ export function IFCViewer(props: Props) {
             if (updateClassificationsTree) {
               updateClassificationsTree({ classifications })
             }
-              */
-            addModelToTheScene = false;
+              
             console.log("Not tiled model loaded")
           }
         }
       }
     }
   }
-
-  //Functionality for the load button
-  const loadIfcBtn = async () => {
-    const result = await props.projectsManager.loadIFC();
-    const blob = new Blob([result?.buffer!])
-    const filePath = result?.fileName! as string
-    await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + result?.fileName!, blob)
-    await tileGeometry(result?.fileName!, result?.buffer!)
-    await tileProperties(result?.fileName!, result?.buffer!)
-
-    props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
-
-    setModelDictionaryVersion(props.project.modelDictionaryVersion)
-    console.log(props.project.modelDictionaryVersion)
-    await updateDocument("/projects", props.project.id, {
-      modelDictionary: props.project.modelDictionary
-    })
-    console.log("Tiling done!")
-  };
 
   //Functionality for the hide button
   const onToggleVisibility = () => {
@@ -552,7 +346,6 @@ export function IFCViewer(props: Props) {
       `;
     })
 
-
     //Functiionality for the classifier button
     const onClassifier = () => {
       if (!floatingGrid) return
@@ -567,13 +360,6 @@ export function IFCViewer(props: Props) {
     const toolbar = BUI.Component.create<BUI.Toolbar>(() => {
       return BUI.html`
             <bim-toolbar style="justify-self: center;">
-              <bim-toolbar-section label="Load Models">
-              <bim-button 
-              icon="line-md:arrow-align-top"
-              label="Load IFC"
-              @click=${async () => { await loadIfcBtn() }}>
-              </bim-button>
-              </bim-toolbar-section>
               <bim-toolbar-section label="Visibility">
               <bim-button
               label="Hide"
