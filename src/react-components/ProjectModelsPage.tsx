@@ -118,7 +118,7 @@ export function ProjectModelsPage(props: Props) {
                 onCloseForm={handleCloseShowModels}
             /> : <></>}
             <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
-                <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} />
+                <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} modelsPage={true}/>
                 <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />
             </div>
         </div>

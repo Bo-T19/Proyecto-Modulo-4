@@ -1,9 +1,10 @@
 import * as OBC from "@thatopen/components"
 import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui"
-import { TaskStatus, ToDosManager } from "./TasksManager"
+import {ToDosManager } from "./TasksManager"
 import { ProjectsManager } from "../../../class/ProjectsManager"
 import { IToDo } from "../../../class/ToDo"
+import { TaskStatus } from "./base-types";
 
 export interface TodoUIState {
     components: OBC.Components

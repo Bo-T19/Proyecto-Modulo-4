@@ -135,7 +135,7 @@ export function ProjectDetailsPage(props: Props) {
                     <ProjectSummary project={project} projectsManager={props.projectsManager} onOpenForm={onEditProjectClick} />
                     <ModelsManagementTable project={project} projectsManager={props.projectsManager} components={components} />
                 </div>
-                <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} />
+                <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} modelsPage={false} />
             </div>
         </div>
     )

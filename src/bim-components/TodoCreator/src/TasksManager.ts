@@ -1,19 +1,10 @@
 import * as OBC from "@thatopen/components"
+import * as OBCF from "@thatopen/components-front"
 import * as BUI from "@thatopen/ui"
 import { ProjectsManager } from "../../../class/ProjectsManager"
-import { IToDo, ToDo } from "../../../class/ToDo"
+import { ToDo } from "../../../class/ToDo"
 import { updateDocument } from "../../../firebase"
-
-//Create the taskStatus type
-export type TaskStatus = "Pending" | "Overdue" | "Finished"
-
-//ToDo type
-export interface TodoData {
-    name: string
-    description: string
-    status: TaskStatus
-    date: Date
-}
+import { TaskStatus, TodoData, ToDoInputData } from "./base-types"
 
 export class ToDosManager extends OBC.Component {
     enabled = true
@@ -36,8 +27,10 @@ export class ToDosManager extends OBC.Component {
     }
 
 
+    set (world: OBC.World) {}
+
     //Methods
-    addToDo(data: IToDo, projectId: string) {
+    addToDo(data: TodoData, projectId: string) {
 
         const project = this.projectsManager.getProject(projectId)
         if (!project) return
@@ -84,7 +77,7 @@ export class ToDosManager extends OBC.Component {
 
         //Edit ToDo Modal
         const editToDoModal = BUI.Component.create<HTMLDialogElement>(() => {
-        return BUI.html`
+            return BUI.html`
         <dialog id="edit-todo-modal">
                 <form id="edit-todo-form" onsubmit={onFormSubmit}>
                     <h2>Edit Task</h2>
@@ -125,58 +118,57 @@ export class ToDosManager extends OBC.Component {
                             style="background-color: red;"
                             label="Cancel"
                             @click=${() => {
-                        {
-                            const modal = document.getElementById("edit-todo-modal")
-                            if (!(modal && modal instanceof HTMLDialogElement)) { return }
-                            modal.close()
-                            modal.remove()
-                        }
-                    }}
+                    {
+                        const modal = document.getElementById("edit-todo-modal")
+                        if (!(modal && modal instanceof HTMLDialogElement)) { return }
+                        modal.close()
+                        modal.remove()
+                    }
+                }}
                         >
                         </bim-button>
                         <bim-button 
                         label="Edit"
                         @click=${() => {
+                    {
+                        const modal = document.getElementById("edit-todo-modal")
+                        if (!(modal && modal instanceof HTMLDialogElement)) { return }
+                        const editDoDoForm = document.getElementById("edit-todo-form")
+                        if (!(editDoDoForm && editDoDoForm instanceof HTMLFormElement)) { return }
+
+                        const formData = new FormData(editDoDoForm)
+                        const editToDoData: ToDoInputData =
                         {
-                            const modal = document.getElementById("edit-todo-modal")
-                            if (!(modal && modal instanceof HTMLDialogElement)) { return }
-                            const editDoDoForm = document.getElementById("edit-todo-form")
-                            if (!(editDoDoForm && editDoDoForm instanceof HTMLFormElement)) { return }
-
-                            const formData = new FormData(editDoDoForm)
-                            const editToDoData: IToDo =
-                            {
-                                name: task.name,
-                                description: formData.get("description") as string,
-                                status: formData.get("status") as TaskStatus,
-                                date: new Date(formData.get("date") as string),
-                                ifcGuids: task.ifcGuids
-
-                            }
-
-                            try {
-                                if (editToDoData.date.toDateString() == "Invalid Date") {
-                                    editToDoData.date = new Date(2024, 1, 1)
-                                }
-                                for (const key in editToDoData) {
-                                    if (task.hasOwnProperty(key) && editToDoData[key]) {
-                                        task[key] = editToDoData[key];
-                                    }
-                                }
-                                task.setColor()
-                                this.onToDoModified()
-                                const staticToDosList = ToDosManager.toPlainObject(project.toDosList)
-                        
-                                updateDocument("/projects", projectId, { toDosList: staticToDosList });
-                            }
-                            catch (error) {
-                                alert(error)
-                            }
-                            modal.close()
-                            modal.remove()
+                            name: task.name,
+                            description: formData.get("description") as string,
+                            status: formData.get("status") as TaskStatus,
+                            date: new Date(formData.get("date") as string),
+                            ifcGuids: task.ifcGuids
                         }
+
+                        try {
+                            if (editToDoData.date.toDateString() == "Invalid Date") {
+                                editToDoData.date = new Date(2024, 1, 1)
+                            }
+                            for (const key in editToDoData) {
+                                if (task.hasOwnProperty(key) && editToDoData[key]) {
+                                    task[key] = editToDoData[key];
+                                }
+                            }
+                            task.setColor()
+                            this.onToDoModified()
+                            const staticToDosList = ToDosManager.toPlainObject(project.toDosList)
+
+                            updateDocument("/projects", projectId, { toDosList: staticToDosList });
+                        }
+                        catch (error) {
+                            alert(error)
+                        }
+                        modal.close()
+                        modal.remove()
                     }
-                    }
+                }
+                }
                     >
                     </bim-button>
                     </div>
@@ -188,7 +180,7 @@ export class ToDosManager extends OBC.Component {
 
         document.body.appendChild(editToDoModal)
         editToDoModal.showModal()
-        
+
     }
 
 
@@ -205,15 +197,33 @@ export class ToDosManager extends OBC.Component {
         this.onToDoModified()
     }
 
+    addModelElementToTask(taskId: string, projectId: string) {
+        const project = this.projectsManager.getProject(projectId)
+        if (!project) return
+
+        const task = this.getTaskById(taskId, projectId)
+        if (!task) return
+
+        const fragmentsManager = this.components.get(OBC.FragmentsManager)
+        const highlighter = this.components.get(OBCF.Highlighter)
+        const guids = fragmentsManager.fragmentIdMapToGuids(highlighter.selection.select)
+
+        task.ifcGuids = [...new Set([...task.ifcGuids, ...guids])];
+        this.onToDoModified()
+        const staticToDosList = ToDosManager.toPlainObject(project.toDosList)
+
+        updateDocument("/projects", projectId, { toDosList: staticToDosList });
+    }
+
     //To PlainObject
-    static toPlainObject(toDosList: IToDo[]): Record<string, any> {
+    static toPlainObject(toDosList: TodoData[]): Record<string, any> {
         return {
             toDosList: toDosList.map(({ name, description, status, date, ifcGuids }) => ({
                 name,
                 description,
                 status,
-                date: date instanceof Date ? date.toISOString() : date, 
-                ifcGuids: [...ifcGuids], 
+                date: date instanceof Date ? date.toISOString() : date,
+                ifcGuids: [...ifcGuids],
             })),
         };
     }

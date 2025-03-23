@@ -1,6 +1,7 @@
 import * as React from "react";
-import * as BUI from "@thatopen/ui"
-import * as OBC from "@thatopen/components"
+import * as BUI from "@thatopen/ui";
+import * as OBC from "@thatopen/components";
+import * as OBCF from "@thatopen/components-front";
 import { Project } from "../class/Project";
 import { ToDo } from "../class/ToDo";
 import { ToDosManager, todoTool } from "../bim-components/TodoCreator";
@@ -12,6 +13,7 @@ interface Props {
     onOpenEditForm: () => void;
     components: OBC.Components;
     projectsManager: ProjectsManager;
+    modelsPage: boolean;
 }
 
 export function ToDoList(props: Props) {
@@ -33,12 +35,33 @@ export function ToDoList(props: Props) {
     const [toDosList, setToDosList] = React.useState<ToDo[]>(props.project.toDosList);
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
 
-    //BIM Table for tasks
-    const tasksTable = BUI.Component.create<BUI.Table>(() => {
-        return BUI.html`
-        <bim-table id = "tasks-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
-      `
-    })
+    //OnRowCreated method for selecting the elements associated to a task
+    const onRowCreated = (event) => {
+        event.stopImmediatePropagation()
+        const { row } = event.detail
+        row.addEventListener("click", () => {
+            const fragments = components.get(OBC.FragmentsManager)
+            const guids = toDosManager.getTaskById(row.data.Id, projectId)?.ifcGuids
+            if (guids) {
+                const fragmentIdMap = fragments.guidToFragmentIdMap(guids)
+                const highlighter = components.get(OBCF.Highlighter)
+                highlighter.highlightByID("select", fragmentIdMap, true, false)
+            }
+
+        })
+    }
+
+    // BIM Table for tasks
+    const tasksTable = BUI.Component.create<BUI.Table>(() => 
+        props.modelsPage
+            ? BUI.html`
+            <bim-table @rowcreated=${onRowCreated} id="tasks-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
+        `
+            : BUI.html`
+            <bim-table id="tasks-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
+        `
+    );
+
 
     //SearchBox
     const inputBox = BUI.Component.create<BUI.TextInput>(() => {
@@ -56,19 +79,19 @@ export function ToDoList(props: Props) {
         toDoSectionHeader.current?.appendChild(inputBox)
     }, [])
 
-    React.useEffect(()=>{
-        const todoButton = todoTool({components, projectsManager,  projectId})
+    React.useEffect(() => {
+        const todoButton = todoTool({ components, projectsManager, projectId })
         todoBtnContainer.current?.appendChild(todoButton)
     }, [])
 
     React.useEffect(() => {
         toDosManager.onToDoModified = () => {
-            setToDosList([...props.project.toDosList]); 
+            setToDosList([...props.project.toDosList]);
         };
     }, []);
 
     // Effect used everytime the toDosList state changes
-    React.useEffect(() => { 
+    React.useEffect(() => {
         const formattedData = toDosList.map(toDo => ({
             data: {
                 Id: toDo.id,
@@ -76,6 +99,7 @@ export function ToDoList(props: Props) {
                 Description: toDo.description,
                 Status: toDo.status,
                 Date: toDo.date.toDateString(),
+                Elements: toDo.ifcGuids.length,
                 Options: ""
             }
         }));
@@ -84,7 +108,14 @@ export function ToDoList(props: Props) {
         if (table) {
             table.data = formattedData;
             table.hiddenColumns = ["Id"]
-            table.dataTransform.Options = (value, rowData)=>{
+            if (props.modelsPage) {
+                table.hiddenColumns = ["Description", "Id"]
+            }
+            else {
+                table.hiddenColumns = ["Id"]
+            }
+
+            table.dataTransform.Options = (value, rowData) => {
                 return BUI.html`
                 <div
                 style = "display: flex; gap: 2px;"
@@ -92,21 +123,41 @@ export function ToDoList(props: Props) {
                     <bim-button
                     icon="material-symbols:edit-square-outline"
                     tooltip-title="Edit"
-                    @click=${() => {{    
-                        const taskId = rowData.Id as string
-                        toDosManager.editTask(taskId,projectId)   
-                        }}}
+                    @click=${() => {
+                        {
+                            const taskId = rowData.Id as string
+                            toDosManager.editTask(taskId, projectId)
+                        }
+                    }}
                     >
                     </bim-button>
                     <bim-button
                         icon="material-symbols:delete"
                         tooltip-title="Delete"
-                        @click=${() => {{           
-                        const taskId = rowData.Id as string
-                        toDosManager.deleteTask(taskId,projectId)
-                        }}}
+                        @click=${() => {
+                        {
+                            const taskId = rowData.Id as string
+                            toDosManager.deleteTask(taskId, projectId)
+                        }
+                    }}
                     >
                     </bim-button>
+                    ${props.modelsPage ?
+                        BUI.html`
+                    <bim-button
+                        icon="material-symbols:add-link-rounded"
+                        tooltip-title="Add Element"
+                        @click=${() => {
+                                {
+                                    const taskId = rowData.Id as string
+                                    toDosManager.addModelElementToTask(taskId, projectId)
+                                }
+                            }}
+                    >
+                    </bim-button>
+                    `
+                        : ""
+                    }
                     </div> 
             `;
             }
@@ -144,7 +195,7 @@ export function ToDoList(props: Props) {
                     >
                         <span className="material-icons-round">search</span>
                     </div>
-                    <div    ref = {todoBtnContainer}>
+                    <div ref={todoBtnContainer}>
                     </div>
 
                 </div>

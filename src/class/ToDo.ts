@@ -1,19 +1,13 @@
 import { v4 as uuidv4 } from 'uuid'
+import { TodoData, ToDoInputData } from '../bim-components/TodoCreator'
 
 //Create the taskStatus type
 export type TaskStatus = "Pending" | "Overdue" | "Finished"
 
 //ToDo type
-export interface IToDo {
-    name: string
-    description: string
-    status: TaskStatus
-    date: Date
-    ifcGuids: string[]
-}
 
 //Class
-export class ToDo {
+export class ToDo implements TodoData{
 
     //To satisfy IToDo
     name: string
@@ -21,13 +15,14 @@ export class ToDo {
     status: TaskStatus
     date: Date
     ifcGuids: string[]
+    camera: { position: THREE.Vector3; target: THREE.Vector3 }
 
     //Class internals
     toDoColorList: string[] = ["#008000", "#8B4513", "#FF0000"]
     color: string
     id: string
 
-    constructor(data: IToDo) {
+    constructor(data: ToDoInputData) {
         for (const key in data) {
             this[key] = data[key]
         }
