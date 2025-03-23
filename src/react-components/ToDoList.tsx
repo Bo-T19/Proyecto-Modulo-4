@@ -2,7 +2,6 @@ import * as React from "react";
 import * as BUI from "@thatopen/ui"
 import * as OBC from "@thatopen/components"
 import { Project } from "../class/Project";
-import { ToDoItem } from "./ToDoItem";
 import { ToDo } from "../class/ToDo";
 import { ToDosManager, todoTool } from "../bim-components/TodoCreator";
 import { ProjectsManager } from "../class/ProjectsManager";
@@ -38,7 +37,7 @@ export function ToDoList(props: Props) {
     //BIM Table for tasks
     const tasksTable = BUI.Component.create<BUI.Table>(() => {
         return BUI.html`
-        <bim-table style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
+        <bim-table id = "tasks-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
       `
     })
 
@@ -82,7 +81,7 @@ export function ToDoList(props: Props) {
             }
         }));
 
-        const table = document.querySelector("bim-table");
+        const table = document.getElementById("tasks-table") as BUI.Table;
         if (table) {
             table.data = formattedData;
             table.hiddenColumns = ["Id"]

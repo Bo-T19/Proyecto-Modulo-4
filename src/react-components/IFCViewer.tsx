@@ -17,6 +17,8 @@ interface Props {
   components: OBC.Components
 }
 export function IFCViewer(props: Props) {
+  //Variable that will help me control when a model its loaded to the scene
+  let addModelToTheScene = false;
 
   //State for tracking the modelDictionary
   const [modelDictionaryVersion, setModelDictionaryVersion] = React.useState(props.project.modelDictionaryVersion);
@@ -143,43 +145,14 @@ export function IFCViewer(props: Props) {
 
     const ifcArrayBuffer = new Uint8Array(ifcBuffer);
 
-
     //Then, try to tile
     try {
       // This triggers the conversion, so the listeners start to be called
       await tiler.streamFromBuffer(ifcArrayBuffer);
     }
     catch (error) {
-      console.log("An error ocurred:" + error)
+      console.log(error)
     }
-
-    /*
-    //Then, create the fragments group and load it to Firbase. Initialize the components and thee fragments manager
-    const fragmentsManager = components.get(OBC.FragmentsManager)
-
-    //IFC Loader. First we get from components the IfcLoader
-    const ifcLoader = components.get(OBC.IfcLoader)
-    ifcLoader.setup()//We need to start the Loader
-
-    const model = await ifcLoader.load(ifcArrayBuffer);
-
-    //Upload the fragments file
-    const fragmentBinary = fragmentsManager.export(model)
-    const blob = new Blob([fragmentBinary])
-    await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + filePath.slice(0, -4) + ".frag", blob)
-
-    //Upload the properties file
-    const properties = model.getLocalProperties();
-    if (properties) {
-      const jsonProperties = JSON.stringify(properties);
-      const blob = new Blob([jsonProperties], { type: 'application/json' });
-      const file = new File([blob], "frag-props.json");
-      await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + filePath.slice(0, -4) + "frag-props.json", blob)
-      console.log("Archivo JSON subido exitosamente a Firebase.");
-    } else {
-      console.log("No hay propiedades locales para convertir en JSON.");
-    }
-*/
   }
 
   //Convert properties to tiles function
@@ -355,8 +328,10 @@ export function IFCViewer(props: Props) {
     //FragmentsManager here, it handles all the models
     const fragmentsManager = components.get(OBC.FragmentsManager)
     fragmentsManager.onFragmentsLoaded.add(async (model) => {
-      console.log(model)
-      world.scene.three.add(model)}
+      if (addModelToTheScene) {
+        world.scene.three.add(model)
+      }
+    }
     )
 
     //Important, whenever there are changes in the size of the app
@@ -366,8 +341,8 @@ export function IFCViewer(props: Props) {
     })
   }
 
-   //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
-   async function loadTiledModel(geometryURL: string, propertiesURL?: string) {
+  //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 
+  async function loadTiledModel(geometryURL: string, propertiesURL?: string) {
     const ifcStreamer = components.get(OBCF.IfcStreamer)
     const rawGeometryData = await fetch(geometryURL);
     const geometryData = await rawGeometryData.json();
@@ -411,11 +386,10 @@ export function IFCViewer(props: Props) {
           console.log("Tiled model loaded")
         }
         catch (error) {
+          addModelToTheScene = true;
           const binary = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + ".frag")
-          
+
           const propertiesBuffer = await downloadFile(props.project.name + "/" + key.slice(0, -4) + "/" + key.slice(0, -4) + "frag-props.json");
-
-
 
           if (!(binary instanceof ArrayBuffer)) return
           const fragmentBinary = new Uint8Array(binary)
@@ -425,11 +399,11 @@ export function IFCViewer(props: Props) {
             const propertiesJson = JSON.parse(new TextDecoder().decode(propertiesBuffer));
             model.setLocalProperties(propertiesJson)
           }
-          
+
           const indexer = components.get(OBC.IfcRelationsIndexer)
           if (model.hasProperties) {
             await indexer.process(model)
-            
+
             //Classifier
             /*
             const classifier = components.get(OBC.Classifier)
@@ -444,7 +418,8 @@ export function IFCViewer(props: Props) {
               updateClassificationsTree({ classifications })
             }
               */
-             console.log("Not tiled model loaded")
+            addModelToTheScene = false;
+            console.log("Not tiled model loaded")
           }
         }
       }
@@ -456,10 +431,12 @@ export function IFCViewer(props: Props) {
     const result = await props.projectsManager.loadIFC();
     const blob = new Blob([result?.buffer!])
     const filePath = result?.fileName! as string
-    await uploadFile(props.project.name + "/" + filePath + "/" + result?.fileName!, blob)
+    await uploadFile(props.project.name + "/" + filePath.slice(0, -4) + "/" + result?.fileName!, blob)
     await tileGeometry(result?.fileName!, result?.buffer!)
     await tileProperties(result?.fileName!, result?.buffer!)
+
     props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
+
     setModelDictionaryVersion(props.project.modelDictionaryVersion)
     console.log(props.project.modelDictionaryVersion)
     await updateDocument("/projects", props.project.id, {
@@ -497,7 +474,6 @@ export function IFCViewer(props: Props) {
     const hider = components.get(OBC.Hider)
     const selection = highlighter.selection.select
     hider.isolate(selection)
-
   }
 
   //Funcitonality for the show all button
@@ -679,18 +655,13 @@ export function IFCViewer(props: Props) {
 
     setViewer()
     setupUI()
+    loadShownModels()
     return () => {
 
       if (components) {
         components.dispose()
       }
     }
-  }, [])
-
-
-  React.useEffect(() => {
-    loadShownModels()
-    
   }, [modelDictionaryVersion])
 
   return (<

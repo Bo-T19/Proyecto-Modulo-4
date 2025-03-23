@@ -131,6 +131,7 @@ export async function deleteFilesContainingText(folderPath: string, searchText: 
         // Delete each matching file
         for (const fileRef of matchingFiles) {
             await deleteObject(fileRef);
+            console.log("Deleted file "+fileRef)
         }
 
         console.log(`Deleted ${matchingFiles.length} files containing "${searchText}"`);

@@ -8,6 +8,7 @@ import { IFCViewer } from "./IFCViewer";
 import * as OBC from "@thatopen/components"
 import { deleteDocument } from "../firebase";
 import { ShowModelsWindow } from "./ShowModelsWindow";
+import { ModelsManagementTable } from "./ModelsManagementTable";
 
 interface Props {
     projectsManager: ProjectsManager
@@ -29,12 +30,10 @@ export function ProjectDetailsPage(props: Props) {
     const [showShowModels, setShowModels] = React.useState(false)
     const [activeTaskId, setActiveTaskId] = React.useState<string>("")
 
-
     //EditProjectForm
     const handleCloseEditProjectForm = () => {
         setEditProjectForm(false);
     }
-
 
     const onEditProjectClick = () => {
         setEditProjectForm(true);
@@ -82,7 +81,6 @@ export function ProjectDetailsPage(props: Props) {
 
     const onEditToDoClick = () => {
         setEditToDoForm(true);
-
     }
 
     React.useEffect(() => {
@@ -94,12 +92,10 @@ export function ProjectDetailsPage(props: Props) {
         }
     }, [showEditToDoForm]);
 
-
     //ShowModelsWindow
     const handleCloseShowModels = () => {
         setShowModels(false)
     }
-
 
     const onShowModelsClick = () => {
         setShowModels(true)
@@ -115,14 +111,12 @@ export function ProjectDetailsPage(props: Props) {
     }, [showShowModels]);
 
     //Task Id 
-
     const setId = (id: string) => {
         setActiveTaskId(id)
     }
 
 
     //Firebase
-
     const navigateTo = Router.useNavigate()
     props.projectsManager.onProjectDeleted = async (id) => {
         await deleteDocument("/projects", id)
@@ -156,10 +150,11 @@ export function ProjectDetailsPage(props: Props) {
             <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
                 <div style={{ display: "flex", flexDirection: "column", rowGap: 30, overflowY: "auto", height: "100%" }}>
                     <ProjectSummary project={project} projectsManager={props.projectsManager} onOpenForm={onEditProjectClick} />
-                    <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} components={components} projectsManager={props.projectsManager}/>
-                </div>
+                    <ModelsManagementTable project={project} projectsManager={props.projectsManager} components={components} />
 
-                <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />
+                </div>
+                <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} sendId={setId} components={components} projectsManager={props.projectsManager} />
+
 
             </div>
         </div>

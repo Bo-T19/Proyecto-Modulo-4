@@ -44,7 +44,6 @@ export function ShowModelsWindow(props: Props) {
             data: {
                 Name: key,
                 Visibility: "",
-                Delete: ""
             }
         }));
 
@@ -80,8 +79,6 @@ export function ShowModelsWindow(props: Props) {
                                 [rowData.Name as string]: "Hidden"
                             }));
                         }
-
-
                     };
 
                     const isChecked = models[rowData.Name as string] === "Shown";
@@ -89,22 +86,7 @@ export function ShowModelsWindow(props: Props) {
                     return BUI.html`
                        <bim-checkbox @change=${onChange} .checked=${isChecked}></bim-checkbox> 
                       `;
-
-
                 },
-
-                Delete: (value, rowData) => {
-                    const deleteRow = () => {
-                        delete models[rowData.Name as string]
-                        table.data = table.data.filter(item => item.data.Name !== rowData.Name);
-                    }
-
-                    return BUI.html`
-                    <div>
-                        <bim-button icon="material-symbols:delete" style="background-color: red" @click=${deleteRow}></bim-button>
-                    </div>  
-                    `
-                }
             }
 
         }
@@ -128,20 +110,6 @@ export function ShowModelsWindow(props: Props) {
         const modal = document.getElementById("show-models-modal")
         if (!(modal && modal instanceof HTMLDialogElement)) { return }
 
-
-        //Delete the models that are not present in the models dictionary
-        const modelDictionary = props.project.modelDictionary;
-        const modelsKeys = new Set(Object.keys(models));
-
-
-        Object.keys(modelDictionary).forEach(modelName => {
-            if (!modelsKeys.has(modelName)) {
-                deleteFolderRecursive(props.project.name + "/" + modelName.slice(0,-4)+ "/")
-                deleteFilesContainingText(props.project.name + "/Tiles/", modelName.slice(0,-4) )
-            }
-        });
-
-        
         //Change the hidden/show property
 
         //This is EXTREMELY IMPORTANT, the project here is updated in firebase
