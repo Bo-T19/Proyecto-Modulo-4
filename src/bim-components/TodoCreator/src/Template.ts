@@ -1,4 +1,5 @@
 import * as OBC from "@thatopen/components"
+import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui"
 import { TaskStatus, ToDosManager } from "./TasksManager"
 import { ProjectsManager } from "../../../class/ProjectsManager"
@@ -87,13 +88,17 @@ export const todoTool = (state: TodoUIState) => {
                                 if (!(newToDOForm && newToDOForm instanceof HTMLFormElement)) { return }
                         
                                 const formData = new FormData(newToDOForm)
-                        
+                                const fragmentsManager = components.get(OBC.FragmentsManager)
+                                const highlighter = components.get(OBCF.Highlighter)
+                                const guids = fragmentsManager.fragmentIdMapToGuids(highlighter.selection.select)
+
                                 const newToDoData: IToDo =
                                 {
                                     name: formData.get("name") as string,
                                     description: formData.get("description") as string,
                                     status: formData.get("status") as TaskStatus,
                                     date: new Date(formData.get("date") as string),
+                                    ifcGuids : guids
                                 }                         
                                 try {
                                     const newToDo = todosManager.addToDo(newToDoData, projectId)

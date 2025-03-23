@@ -9,6 +9,7 @@ export interface IToDo {
     description: string
     status: TaskStatus
     date: Date
+    ifcGuids: string[]
 }
 
 //Class
@@ -19,6 +20,7 @@ export class ToDo {
     description: string
     status: TaskStatus
     date: Date
+    ifcGuids: string[]
 
     //Class internals
     toDoColorList: string[] = ["#008000", "#8B4513", "#FF0000"]
@@ -30,6 +32,7 @@ export class ToDo {
             this[key] = data[key]
         }
 
+        console.log(data)
         this.id =uuidv4()
         this.setColor()
     }

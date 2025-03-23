@@ -150,6 +150,8 @@ export class ToDosManager extends OBC.Component {
                                 description: formData.get("description") as string,
                                 status: formData.get("status") as TaskStatus,
                                 date: new Date(formData.get("date") as string),
+                                ifcGuids: task.ifcGuids
+
                             }
 
                             try {
@@ -204,9 +206,15 @@ export class ToDosManager extends OBC.Component {
     }
 
     //To PlainObject
-    static toPlainObject(toDosList: ToDo[]): Record<string, any> {
+    static toPlainObject(toDosList: IToDo[]): Record<string, any> {
         return {
-            toDosList: toDosList.map(toDo => toDo.toPlainObject()),
+            toDosList: toDosList.map(({ name, description, status, date, ifcGuids }) => ({
+                name,
+                description,
+                status,
+                date: date instanceof Date ? date.toISOString() : date, 
+                ifcGuids: [...ifcGuids], 
+            })),
         };
     }
 
@@ -227,6 +235,7 @@ export class ToDosManager extends OBC.Component {
                 description: toDoData.description,
                 status: toDoData.status as TaskStatus,
                 date: new Date(toDoData.date),
+                ifcGuids: toDoData.ifcGuids
             });
         });
 
