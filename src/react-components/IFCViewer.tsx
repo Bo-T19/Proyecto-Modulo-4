@@ -177,7 +177,7 @@ export function IFCViewer(props: Props) {
     await indexer.process(model)
 
     //Classifier
-    
+
     const classifier = components.get(OBC.Classifier)
     await classifier.bySpatialStructure(model)
     classifier.byEntity(model)
@@ -189,7 +189,7 @@ export function IFCViewer(props: Props) {
     if (updateClassificationsTree) {
       updateClassificationsTree({ classifications })
     }
-      
+
   }
 
   const loadShownModels = async () => {
@@ -224,7 +224,7 @@ export function IFCViewer(props: Props) {
             await indexer.process(model)
 
             //Classifier
-            
+
             const classifier = components.get(OBC.Classifier)
             await classifier.bySpatialStructure(model)
             classifier.byEntity(model)
@@ -236,7 +236,7 @@ export function IFCViewer(props: Props) {
             if (updateClassificationsTree) {
               updateClassificationsTree({ classifications })
             }
-              
+
             console.log("Not tiled model loaded")
           }
         }
@@ -288,7 +288,7 @@ export function IFCViewer(props: Props) {
 
     const floatingGrid = BUI.Component.create<BUI.Grid>(() => {
       return BUI.html`
-            <bim-grid floating style="padding: 20px;"></bim-grid>
+            <bim-grid id= "floating-grid" floating style="padding: 20px;"></bim-grid>
           `;
     })
 
@@ -303,6 +303,8 @@ export function IFCViewer(props: Props) {
       highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
         if (!floatingGrid) return
         floatingGrid.layout = "second"
+
+        console.log
         updatePropsTable({ fragmentIdMap })
         propsTable.expanded = false
 
@@ -311,6 +313,8 @@ export function IFCViewer(props: Props) {
       })
 
       highlighter.events.select.onClear.add(() => {
+        const simpleQto = components.get(SimpleQTO)
+        simpleQto.qtoResult = {}
         updatePropsTable({ fragmentIdMap: {} })
         if (!floatingGrid) return
         floatingGrid.layout = "main"
@@ -335,6 +339,8 @@ export function IFCViewer(props: Props) {
         </bim-panel>
       `;
     })
+
+
 
     //Classifications panel
     const classifierPanel = BUI.Component.create<BUI.Panel>(() => {
@@ -364,6 +370,14 @@ export function IFCViewer(props: Props) {
       }
     }
 
+    const onShowPropertiesAndQtos = () => {
+      if (!floatingGrid) return
+      if (floatingGrid.layout !== "second") {
+        floatingGrid.layout = "second"
+      } else {
+        floatingGrid.layout = "main"
+      }
+    }
     //Toolbar
     const toolbar = BUI.Component.create<BUI.Toolbar>(() => {
       return BUI.html`
@@ -393,6 +407,15 @@ export function IFCViewer(props: Props) {
               label="Groups"
               icon="material-symbols:action-key"
               @click=${() => { onClassifier() }}
+              >
+              </bim-button>
+              </bim-toolbar-section>
+              </bim-toolbar-section>
+              <bim-toolbar-section label="Properties">
+              <bim-button
+              label="Show Qtos and Properties"
+              icon="material-symbols:event-list"
+              @click=${() => { onShowPropertiesAndQtos() }}
               >
               </bim-button>
               </bim-toolbar-section>
@@ -450,7 +473,9 @@ export function IFCViewer(props: Props) {
     setupUI()
     loadShownModels()
     return () => {
-
+      const viewerContainer = document.getElementById("viewer-container") as HTMLElement
+      const floatingGrid = document.getElementById("floating-grid") as HTMLElement;
+      viewerContainer.removeChild(floatingGrid)
       if (components) {
         components.dispose()
       }

@@ -8,7 +8,7 @@ export class SimpleQTO extends OBC.Component implements OBC.Disposable {
   static uuid = "3b5e8cea-9983-4bf6-b120-51152985b22d"
   enabled = true
   onDisposed: OBC.Event<any>
-  private _qtoResult: QtoResult = {}
+  qtoResult: QtoResult = {}
 
   constructor(components: OBC.Components) {
     super(components)
@@ -33,7 +33,7 @@ export class SimpleQTO extends OBC.Component implements OBC.Disposable {
             const set = await model.getProperties(expressID)
             const { name: setName } = await OBC.IfcPropertiesUtils.getEntityName(model, expressID)
             if (set?.type !== WEBIFC.IFCELEMENTQUANTITY || !setName) continue
-            if (!(setName in this._qtoResult)) { this._qtoResult[setName] = {} }
+            if (!(setName in this.qtoResult)) { this.qtoResult[setName] = {} }
             await OBC.IfcPropertiesUtils.getQsetQuantities(
               model,
               expressID,
@@ -41,15 +41,15 @@ export class SimpleQTO extends OBC.Component implements OBC.Disposable {
                 const { name: qtoName } = await OBC.IfcPropertiesUtils.getEntityName(model, qtoID)
                 const { value } = await OBC.IfcPropertiesUtils.getQuantityValue(model, qtoID)
                 if (!qtoName || !value) { return }
-                if (!(qtoName in this._qtoResult[setName])) { this._qtoResult[setName][qtoName] = 0 }
-                this._qtoResult[setName][qtoName] += value
+                if (!(qtoName in this.qtoResult[setName])) { this.qtoResult[setName][qtoName] = 0 }
+                this.qtoResult[setName][qtoName] += value
               }
             )
           }
         }
       }
     }
-    console.log( this._qtoResult)
+    console.log( this.qtoResult)
     console.timeEnd("QTO V2")
   }
 
