@@ -5,10 +5,13 @@ import { ProjectSummary } from "./ProjectSummary";
 import { EditProjectForm } from "./EditProjectForm";
 import { ToDoList } from "./ToDoList";
 import { IFCViewer } from "./IFCViewer";
-import * as OBC from "@thatopen/components"
+import * as OBC from "@thatopen/components";
+import * as BUI from "@thatopen/ui";
 import { deleteDocument } from "../firebase";
 import { ShowModelsWindow } from "./ShowModelsWindow";
 import { ModelsManagementTable } from "./ModelsManagementTable";
+import { qtoTool } from "../bim-components/SimpleQTO/src/Template"
+import { todoTool } from "../bim-components/TodoCreator";
 
 interface Props {
     projectsManager: ProjectsManager
@@ -30,6 +33,14 @@ export function ProjectModelsPage(props: Props) {
     const [showNewToDoForm, setNewToDoForm] = React.useState(false)
     const [showEditToDoForm, setEditToDoForm] = React.useState(false)
 
+    //References and qtos table
+    const qtosTableContainer = React.useRef<HTMLDivElement>(null)
+    const qtosTable = BUI.Component.create<BUI.Table>(() =>
+        BUI.html`
+                <bim-table id="qtos-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
+            `
+    );
+
     //NewToDoForm
     const onNewToDoClick = () => {
         setNewToDoForm(true);
@@ -49,29 +60,32 @@ export function ProjectModelsPage(props: Props) {
         setEditToDoForm(false);
     };
 
-
     const onEditToDoClick = () => {
         setEditToDoForm(true);
     }
 
-        //ShowModelsWindow
-        const handleCloseShowModels = () => {
-            setShowModels(false)
-        }
-    
-        const onShowModelsClick = () => {
-            setShowModels(true)
-        }
-    
-        React.useEffect(() => {
-            if (showShowModels) {
-                const modal = document.getElementById("show-models-modal");
-                if (modal && modal instanceof HTMLDialogElement) {
-                    modal.showModal();
-                }
+    //ShowModelsWindow
+    const handleCloseShowModels = () => {
+        setShowModels(false)
+    }
+
+    const onShowModelsClick = () => {
+        setShowModels(true)
+    }
+
+    React.useEffect(() => {
+        qtosTableContainer.current?.appendChild(qtosTable)
+    }, [])
+
+    React.useEffect(() => {
+        if (showShowModels) {
+            const modal = document.getElementById("show-models-modal");
+            if (modal && modal instanceof HTMLDialogElement) {
+                modal.showModal();
             }
-        }, [showShowModels]);
-    
+        }
+    }, [showShowModels]);
+
 
     React.useEffect(() => {
         if (showEditToDoForm) {
@@ -91,6 +105,7 @@ export function ProjectModelsPage(props: Props) {
             }
         }
     }, [showShowModels]);
+
 
     return (
         <div className="page" id="project-models" >
@@ -118,9 +133,41 @@ export function ProjectModelsPage(props: Props) {
                 onCloseForm={handleCloseShowModels}
             /> : <></>}
             <div className="main-page-content" style={{ height: "calc(100vh - 20px)", overflow: "hidden" }}>
-                <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} modelsPage={true}/>
-                <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />
+                <div style={{ display: "flex",
+                    flexDirection : "column",
+                    gap: "10px"}}>
+
+                <div style={{
+                    flexGrow: 1,
+                    overflowY: "auto",
+                    height: "50%",
+                    gap: "10px"
+                }}>
+                    <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} modelsPage={true} />
+                </div>
+                <div className="dashboard-card"
+                    style={{
+                        flexGrow: 1,
+                        overflowY: "auto",
+                        height: "50%"
+                    }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            padding: "10px 10px",
+                            rowGap: 20,
+                            overflowY: "auto",
+                            height: "fit-content"
+                        }}
+                    >
+                        {<div ref={qtosTableContainer}></div>}
+
+                    </div>
+                </div>
             </div>
+            <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />
         </div>
+        </div >
     )
 }

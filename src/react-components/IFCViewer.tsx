@@ -3,7 +3,7 @@ import * as OBC from "@thatopen/components"
 import * as BUI from "@thatopen/ui"
 import * as THREE from "three"
 import { downloadFile, downloadFilesContainingText, getURL, openDB, updateDocument, uploadFile } from "../firebase"
-import { Project, ModelVisibility } from "../class/Project";
+import { Project } from "../class/Project";
 import { ProjectsManager } from "../class/ProjectsManager";
 import * as OBCF from "@thatopen/components-front";
 import { IfcAPI } from "web-ifc";
@@ -11,6 +11,7 @@ import * as CUI from "@thatopen/ui-obc";
 import { FragmentsGroup } from "@thatopen/fragments"
 import { ToDosManager } from "../bim-components/TodoCreator"
 import { SimpleQTO } from "../bim-components/SimpleQTO";
+import { elementPropertiesTemplate } from "@thatopen/ui-obc/dist/components/tables/ElementProperties/src/template"
 
 interface Props {
   project: Project,
@@ -310,11 +311,22 @@ export function IFCViewer(props: Props) {
 
         const simpleQto = components.get(SimpleQTO)
         await simpleQto.sumQuantities(fragmentIdMap)
+
+        const qtosTable = document.getElementById("qtos-table") as BUI.Table
+        if(qtosTable)
+        {
+          qtosTable.data = simpleQto.convertQtoSum()
+        }
       })
 
       highlighter.events.select.onClear.add(() => {
         const simpleQto = components.get(SimpleQTO)
         simpleQto.qtoResult = {}
+        const qtosTable = document.getElementById("qtos-table") as BUI.Table
+        if(qtosTable)
+        {
+          qtosTable.data = simpleQto.convertQtoSum()
+        }
         updatePropsTable({ fragmentIdMap: {} })
         if (!floatingGrid) return
         floatingGrid.layout = "main"
@@ -341,11 +353,9 @@ export function IFCViewer(props: Props) {
     })
 
 
-
     //Classifications panel
     const classifierPanel = BUI.Component.create<BUI.Panel>(() => {
-      return BUI.html
-        `
+      return BUI.html `
       <bim-panel>
           <bim-panel-section
               name="classifier"
@@ -413,7 +423,7 @@ export function IFCViewer(props: Props) {
               </bim-toolbar-section>
               <bim-toolbar-section label="Properties">
               <bim-button
-              label="Show Qtos and Properties"
+              label="Show Properties"
               icon="material-symbols:event-list"
               @click=${() => { onShowPropertiesAndQtos() }}
               >
@@ -473,9 +483,16 @@ export function IFCViewer(props: Props) {
     setupUI()
     loadShownModels()
     return () => {
+
       const viewerContainer = document.getElementById("viewer-container") as HTMLElement
-      const floatingGrid = document.getElementById("floating-grid") as HTMLElement;
-      viewerContainer.removeChild(floatingGrid)
+      const floatingGrid= document.getElementById("floating-grid") as HTMLElement;
+      const viewerContainerHTML =  viewerContainer as HTMLElement
+      const floatingGridHTML= floatingGrid as HTMLElement;
+
+      if(viewerContainer && floatingGrid)
+      {
+        viewerContainerHTML.removeChild(floatingGridHTML)
+      }
       if (components) {
         components.dispose()
       }

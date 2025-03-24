@@ -56,7 +56,7 @@ export function ToDoList(props: Props) {
     const tasksTable = BUI.Component.create<BUI.Table>(() =>
         props.modelsPage
             ? BUI.html`
-            <bim-table @rowcreated=${onRowCreated} id="tasks-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
+            <bim-table @rowcreated=${onRowCreated} id="tasks-table" style="background-color: #f1f2f4; border-radius: 8px; height: auto"></bim-table>
         `
             : BUI.html`
             <bim-table id="tasks-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
