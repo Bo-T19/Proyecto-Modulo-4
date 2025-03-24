@@ -1,10 +1,10 @@
 import * as OBC from "@thatopen/components"
 import * as OBCF from "@thatopen/components-front";
 import * as BUI from "@thatopen/ui"
-import {ToDosManager } from "./TasksManager"
+import { ToDosManager } from "./TasksManager"
 import { ProjectsManager } from "../../../class/ProjectsManager"
-import { IToDo } from "../../../class/ToDo"
-import { TaskStatus } from "./base-types";
+import { TaskStatus, TodoData } from "./base-types";
+import { Vector3 } from "three";
 
 export interface TodoUIState {
     components: OBC.Components
@@ -74,47 +74,54 @@ export const todoTool = (state: TodoUIState) => {
                     <bim-button
                         style="background-color: red;"
                         label="Cancel"
-                        @click=${() => {{                         
-                            const modal = document.getElementById("new-todo-modal")
-                            if (!(modal && modal instanceof HTMLDialogElement)) { return }
-                            modal.close()
-                            modal.remove()
-                            }}}
+                        @click=${() => {
+                {
+                    const modal = document.getElementById("new-todo-modal")
+                    if (!(modal && modal instanceof HTMLDialogElement)) { return }
+                    modal.close()
+                    modal.remove()
+                }
+            }}
                     >
                     </bim-button>
                     <bim-button 
                     label="Create"
-                    @click=${() => {{
-                                const newToDOForm = document.getElementById("new-todo-form")
-                                if (!(newToDOForm && newToDOForm instanceof HTMLFormElement)) { return }
-                        
-                                const formData = new FormData(newToDOForm)
-                                const fragmentsManager = components.get(OBC.FragmentsManager)
-                                const highlighter = components.get(OBCF.Highlighter)
-                                const guids = fragmentsManager.fragmentIdMapToGuids(highlighter.selection.select)
+                    @click=${() => {
+                {
+                    const newToDOForm = document.getElementById("new-todo-form")
+                    if (!(newToDOForm && newToDOForm instanceof HTMLFormElement)) { return }
 
-                                const newToDoData: IToDo =
-                                {
-                                    name: formData.get("name") as string,
-                                    description: formData.get("description") as string,
-                                    status: formData.get("status") as TaskStatus,
-                                    date: new Date(formData.get("date") as string),
-                                    ifcGuids : guids
-                                }                         
-                                try {
-                                    const newToDo = todosManager.addToDo(newToDoData, projectId)
-                                    newToDOForm.reset()
-                                    const modal = document.getElementById("new-todo-modal")
-                                    if (!(modal && modal instanceof HTMLDialogElement)) { return }
-                                    modal.close()    
-                                    modal.remove()                                   
-                                }
-                                catch (error) {
-                                    alert(error)
-                                }
-                            }
+                    const formData = new FormData(newToDOForm)
+                    const fragmentsManager = components.get(OBC.FragmentsManager)
+                    const highlighter = components.get(OBCF.Highlighter)
+                    const guids = fragmentsManager.fragmentIdMapToGuids(highlighter.selection.select)
+
+                    const newToDoData: TodoData =
+                    {
+                        name: formData.get("name") as string,
+                        description: formData.get("description") as string,
+                        status: formData.get("status") as TaskStatus,
+                        date: new Date(formData.get("date") as string),
+                        ifcGuids: guids,
+                        camera: {
+                            position: new Vector3,
+                            target: new Vector3
                         }
                     }
+                    try {
+                        const newToDo = todosManager.addToDo(newToDoData, projectId)
+                        newToDOForm.reset()
+                        const modal = document.getElementById("new-todo-modal")
+                        if (!(modal && modal instanceof HTMLDialogElement)) { return }
+                        modal.close()
+                        modal.remove()
+                    }
+                    catch (error) {
+                        alert(error)
+                    }
+                }
+            }
+            }
                     >
                     </bim-button>
                     </div>
@@ -123,21 +130,50 @@ export const todoTool = (state: TodoUIState) => {
         </dialog>
         `
     })
-    
-  
+
+    //Dispose
+    todosManager.onDisposed.add(() => {
+        todoButton.remove()
+        todoPriorityButton.remove()
+        todoModal.remove
+        console.log("Disposed")
+    }
+    )
+
     //Button for showing the modal
-    return BUI.Component.create<BUI.Button>(() => {
+    const todoButton = BUI.Component.create<BUI.Button>(() => {
         return BUI.html`
         <bim-button
-            @click=${() => {{           
-                //Append the modal to the page
-                document.body.appendChild(todoModal)
-                todoModal.showModal()
-            }}}
+            @click=${() => {
+                {
+                    //Append the modal to the page
+                    document.body.appendChild(todoModal)
+                    todoModal.showModal()
+                }
+            }}
             icon="pajamas:todo-done"
             tooltip-title="To-Do"
         >
         </bim-button>
         `
     })
+
+    const onTogglePriority = (event: Event) => {
+        const btn = event.target as BUI.Button
+        btn.active = !btn.active
+        todosManager.highlightByStatus(btn.active, projectId)
+    }
+
+    const todoPriorityButton = BUI.Component.create<BUI.Button>(() => {
+        return BUI.html`
+          <bim-button 
+            icon="iconoir:fill-color"
+            tooltip-title="Show Priority Filter"
+            @click=${onTogglePriority}
+          ></bim-button>
+        `
+    })
+
+
+    return [todoButton, todoPriorityButton]
 }

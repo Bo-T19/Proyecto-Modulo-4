@@ -157,6 +157,7 @@ export function IFCViewer(props: Props) {
     })
 
     const todosManager = components.get(ToDosManager)
+    todosManager.setup()
     todosManager.world = world
   }
 
@@ -441,7 +442,6 @@ export function IFCViewer(props: Props) {
   //useEffect for setting it all
   React.useEffect(() => {
     console.log("modelDictionaryVersion changed:", props.project.modelDictionaryVersion);
-    components.dispose();
 
     setViewer()
     setupUI()

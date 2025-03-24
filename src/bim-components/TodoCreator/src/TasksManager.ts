@@ -8,7 +8,7 @@ import { updateDocument } from "../../../firebase"
 import { TaskStatus, TodoData } from "./base-types"
 import CameraControls from 'camera-controls';
 
-export class ToDosManager extends OBC.Component {
+export class ToDosManager extends OBC.Component implements OBC.Disposable {
     enabled = true
     static uuid = "b3393707-46dc-4afa-ac43-0faac283159c"
 
@@ -17,21 +17,13 @@ export class ToDosManager extends OBC.Component {
         this.components.add(ToDosManager.uuid, this)
     }
 
-
-    private _world: OBC.World
-    private _cameraControls: CameraControls
-    
-    set world(world: OBC.World) {
-        this._world = world;
-    
-        const camera = world.camera;
-        if (!camera.hasCameraControls()) {
-            throw new Error("The world camera doesn't have camera controls");
-        }
-        
-        this._cameraControls = camera.controls;
+    //Dispose
+    onDisposed: OBC.Event<any> = new OBC.Event()
+    async dispose ()
+    {
+      this.enabled = false
+      this.onDisposed.trigger()
     }
-    
     //To Satisfy IToDosManager
 
     //Class internals
@@ -43,12 +35,51 @@ export class ToDosManager extends OBC.Component {
         this.projectsManager = projectsManager
     }
 
+    //Private properties and setters
+    private _world: OBC.World
+    private _cameraControls: CameraControls
+
+    set world(world: OBC.World) {
+        this._world = world;
+        const camera = world.camera;
+        if (!camera.hasCameraControls()) {
+            throw new Error("The world camera doesn't have camera controls");
+        }
+        this._cameraControls = camera.controls;
+    }
+
+
+    //Setup method
+    setup() {
+        const highlighter = this.components.get(OBCF.Highlighter)
+        highlighter.add(`${ToDosManager.uuid}-status-Pending`, new THREE.Color(0xf4d03f));
+        highlighter.add(`${ToDosManager.uuid}-status-Overdue`, new THREE.Color(0xe74c3c));
+        highlighter.add(`${ToDosManager.uuid}-status-Finished`, new THREE.Color(0x52be80));
+    }
 
     //Methods
-    addToDo(data: TodoData, projectId: string) {
+    highlightByStatus(enablePriorityHighlight: boolean, projectId: string) {
+        if (!this.enabled) return
+        const highlighter = this.components.get(OBCF.Highlighter)
+        const project = this.projectsManager.getProject(projectId)
+        if (!project) return
 
+        if (enablePriorityHighlight) {
+            for (const todo of project.toDosList) {
+                const fragments = this.components.get(OBC.FragmentsManager)
+                const fragmentIdMap = fragments.guidToFragmentIdMap(todo.ifcGuids)
+                console.log(todo.status)
+                highlighter.highlightByID(`${ToDosManager.uuid}-status-${todo.status}`, fragmentIdMap, false, false)
+            }
+        } else {
+            highlighter.clear()
+        }
+    }
+
+    addToDo(data: TodoData, projectId: string) {
+        if (!this.enabled) return
         const camera = this._world.camera
-        if(!(camera.hasCameraControls())){
+        if (!(camera.hasCameraControls())) {
             throw new Error("The world camera doesn't have camera controls")
         }
 
@@ -57,7 +88,7 @@ export class ToDosManager extends OBC.Component {
         const target = new THREE.Vector3()
         camera.controls.getTarget(target)
 
-        
+
         const project = this.projectsManager.getProject(projectId)
         if (!project) return
 
@@ -71,7 +102,7 @@ export class ToDosManager extends OBC.Component {
             throw new Error(`The name must have at least 5 characters`)
         }
 
-        data.camera = {position, target}
+        data.camera = { position, target }
 
         const toDo = new ToDo(data)
         project.toDosList.push(toDo)
@@ -83,7 +114,7 @@ export class ToDosManager extends OBC.Component {
 
 
     getTaskById(taskId: string, projectId: string) {
-
+        if (!this.enabled) return
         const project = this.projectsManager.getProject(projectId)
         if (!project) return
 
@@ -95,7 +126,7 @@ export class ToDosManager extends OBC.Component {
     }
 
     editTask(taskId: string, projectId: string) {
-
+        if (!this.enabled) return
         //Get the task and the project
         const project = this.projectsManager.getProject(projectId)
         if (!project) return
@@ -214,6 +245,7 @@ export class ToDosManager extends OBC.Component {
 
 
     deleteTask(taskId: string, projectId: string) {
+        if (!this.enabled) return
         const project = this.projectsManager.getProject(projectId)
         if (!project) return
 
@@ -227,6 +259,7 @@ export class ToDosManager extends OBC.Component {
     }
 
     addModelElementToTask(taskId: string, projectId: string) {
+        if (!this.enabled) return
         const project = this.projectsManager.getProject(projectId)
         if (!project) return
 
@@ -245,8 +278,8 @@ export class ToDosManager extends OBC.Component {
     }
 
     //Highlight to do for when a row is selected
-    async highlightToDo(guids: string[], toDoCamera: {position: THREE.Vector3, target: THREE.Vector3})
-    {
+    async highlightToDo(guids: string[], toDoCamera: { position: THREE.Vector3, target: THREE.Vector3 }) {
+        if (!this.enabled) return
         const fragments = this.components.get(OBC.FragmentsManager)
         if (guids) {
             const fragmentIdMap = fragments.guidToFragmentIdMap(guids)
@@ -255,9 +288,9 @@ export class ToDosManager extends OBC.Component {
         }
         if (!this._world) {
             throw new Error("No world found")
-          }
-      
-          await this._cameraControls.setLookAt(
+        }
+
+        await this._cameraControls.setLookAt(
             toDoCamera.position.x,
             toDoCamera.position.y,
             toDoCamera.position.z,
@@ -265,7 +298,7 @@ export class ToDosManager extends OBC.Component {
             toDoCamera.target.y,
             toDoCamera.target.z,
             true
-          )
+        )
     }
 
     //To PlainObject

@@ -45,8 +45,7 @@ export function ToDoList(props: Props) {
             const todoCamera = todo?.camera
             console.log(todoCamera)
             console.log(todo)
-            if (ifcGuids && todoCamera)
-            {
+            if (ifcGuids && todoCamera) {
                 toDosManager.highlightToDo(ifcGuids, todoCamera)
             }
 
@@ -54,7 +53,7 @@ export function ToDoList(props: Props) {
     }
 
     // BIM Table for tasks
-    const tasksTable = BUI.Component.create<BUI.Table>(() => 
+    const tasksTable = BUI.Component.create<BUI.Table>(() =>
         props.modelsPage
             ? BUI.html`
             <bim-table @rowcreated=${onRowCreated} id="tasks-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
@@ -75,15 +74,45 @@ export function ToDoList(props: Props) {
         tasksTable.queryString = inputBox.value
     })
 
+    //Fast filter
+    const quickFilters = BUI.Component.create(() => {
+        const onOptionClick = (option: string) => {
+            const query = "Status?"+option;
+            tasksTable.queryString = query;
+            // We also update the search box to reflect the current query
+            inputBox.value = query;
+        };
+
+
+        return BUI.html`
+          <div style="display: flex; gap: 0.5rem">
+            <bim-dropdown label="Filter by status">
+                <bim-option @click=${()=>onOptionClick("")} label="None"></bim-option>
+                <bim-option @click=${()=>onOptionClick("Pending")} label="Pending"></bim-option>
+                <bim-option @click=${()=>onOptionClick("Overdue")} label="Overdue"></bim-option>
+                <bim-option @click=${()=>onOptionClick("Finished")} label="Finished"></bim-option> 
+            </bim-dropdown>
+          </div>
+        `;
+    });
+
     //Effects
     React.useEffect(() => {
         todoContainer.current?.appendChild(tasksTable)
         toDoSectionHeader.current?.appendChild(inputBox)
+        if (!props.modelsPage) {
+            toDoSectionHeader.current?.appendChild(quickFilters)
+        }
+
     }, [])
 
     React.useEffect(() => {
-        const todoButton = todoTool({ components, projectsManager, projectId })
-        todoBtnContainer.current?.appendChild(todoButton)
+        const [todoButton, todoPriorityButton] = todoTool({ components, projectsManager, projectId })
+
+        if (props.modelsPage) {
+            todoBtnContainer.current?.appendChild(todoPriorityButton)
+            todoBtnContainer.current?.appendChild(todoButton)
+        }
     }, [])
 
     React.useEffect(() => {
@@ -197,7 +226,11 @@ export function ToDoList(props: Props) {
                     >
                         <span className="material-icons-round">search</span>
                     </div>
-                    <div ref={todoBtnContainer}>
+                    <div ref={todoBtnContainer} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                    }}>
                     </div>
 
                 </div>
@@ -213,7 +246,7 @@ export function ToDoList(props: Props) {
                     height: "auto"
                 }}
             >
-                {<div id="todos-list" ref={todoContainer} ></div>}
+                {<div id="todos-list" ref={todoContainer}></div>}
 
             </div>
         </div>
