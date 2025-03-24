@@ -1,10 +1,12 @@
 import * as OBC from "@thatopen/components"
 import * as OBCF from "@thatopen/components-front"
 import * as BUI from "@thatopen/ui"
+import * as THREE from "three"
 import { ProjectsManager } from "../../../class/ProjectsManager"
 import { ToDo } from "../../../class/ToDo"
 import { updateDocument } from "../../../firebase"
-import { TaskStatus, TodoData, ToDoInputData } from "./base-types"
+import { TaskStatus, TodoData } from "./base-types"
+import CameraControls from 'camera-controls';
 
 export class ToDosManager extends OBC.Component {
     enabled = true
@@ -15,6 +17,21 @@ export class ToDosManager extends OBC.Component {
         this.components.add(ToDosManager.uuid, this)
     }
 
+
+    private _world: OBC.World
+    private _cameraControls: CameraControls
+    
+    set world(world: OBC.World) {
+        this._world = world;
+    
+        const camera = world.camera;
+        if (!camera.hasCameraControls()) {
+            throw new Error("The world camera doesn't have camera controls");
+        }
+        
+        this._cameraControls = camera.controls;
+    }
+    
     //To Satisfy IToDosManager
 
     //Class internals
@@ -27,11 +44,20 @@ export class ToDosManager extends OBC.Component {
     }
 
 
-    set (world: OBC.World) {}
-
     //Methods
     addToDo(data: TodoData, projectId: string) {
 
+        const camera = this._world.camera
+        if(!(camera.hasCameraControls())){
+            throw new Error("The world camera doesn't have camera controls")
+        }
+
+        const position = new THREE.Vector3()
+        camera.controls.getPosition(position)
+        const target = new THREE.Vector3()
+        camera.controls.getTarget(target)
+
+        
         const project = this.projectsManager.getProject(projectId)
         if (!project) return
 
@@ -44,6 +70,8 @@ export class ToDosManager extends OBC.Component {
         if (data.name.length < 5) {
             throw new Error(`The name must have at least 5 characters`)
         }
+
+        data.camera = {position, target}
 
         const toDo = new ToDo(data)
         project.toDosList.push(toDo)
@@ -137,13 +165,14 @@ export class ToDosManager extends OBC.Component {
                         if (!(editDoDoForm && editDoDoForm instanceof HTMLFormElement)) { return }
 
                         const formData = new FormData(editDoDoForm)
-                        const editToDoData: ToDoInputData =
+                        const editToDoData: TodoData =
                         {
                             name: task.name,
                             description: formData.get("description") as string,
                             status: formData.get("status") as TaskStatus,
                             date: new Date(formData.get("date") as string),
-                            ifcGuids: task.ifcGuids
+                            ifcGuids: task.ifcGuids,
+                            camera: task.camera
                         }
 
                         try {
@@ -215,15 +244,40 @@ export class ToDosManager extends OBC.Component {
         updateDocument("/projects", projectId, { toDosList: staticToDosList });
     }
 
+    //Highlight to do for when a row is selected
+    async highlightToDo(guids: string[], toDoCamera: {position: THREE.Vector3, target: THREE.Vector3})
+    {
+        const fragments = this.components.get(OBC.FragmentsManager)
+        if (guids) {
+            const fragmentIdMap = fragments.guidToFragmentIdMap(guids)
+            const highlighter = this.components.get(OBCF.Highlighter)
+            highlighter.highlightByID("select", fragmentIdMap, true, false)
+        }
+        if (!this._world) {
+            throw new Error("No world found")
+          }
+      
+          await this._cameraControls.setLookAt(
+            toDoCamera.position.x,
+            toDoCamera.position.y,
+            toDoCamera.position.z,
+            toDoCamera.target.x,
+            toDoCamera.target.y,
+            toDoCamera.target.z,
+            true
+          )
+    }
+
     //To PlainObject
     static toPlainObject(toDosList: TodoData[]): Record<string, any> {
         return {
-            toDosList: toDosList.map(({ name, description, status, date, ifcGuids }) => ({
+            toDosList: toDosList.map(({ name, description, status, date, ifcGuids, camera }) => ({
                 name,
                 description,
                 status,
                 date: date instanceof Date ? date.toISOString() : date,
                 ifcGuids: [...ifcGuids],
+                camera: JSON.stringify(camera)
             })),
         };
     }
@@ -245,7 +299,8 @@ export class ToDosManager extends OBC.Component {
                 description: toDoData.description,
                 status: toDoData.status as TaskStatus,
                 date: new Date(toDoData.date),
-                ifcGuids: toDoData.ifcGuids
+                ifcGuids: toDoData.ifcGuids,
+                camera: JSON.parse(toDoData.camera)
             });
         });
 

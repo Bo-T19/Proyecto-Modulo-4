@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { TodoData, ToDoInputData } from '../bim-components/TodoCreator'
+import { TodoData } from '../bim-components/TodoCreator'
 
 //Create the taskStatus type
 export type TaskStatus = "Pending" | "Overdue" | "Finished"
@@ -22,7 +22,7 @@ export class ToDo implements TodoData{
     color: string
     id: string
 
-    constructor(data: ToDoInputData) {
+    constructor(data: TodoData) {
         for (const key in data) {
             this[key] = data[key]
         }

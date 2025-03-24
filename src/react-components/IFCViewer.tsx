@@ -9,6 +9,7 @@ import * as OBCF from "@thatopen/components-front";
 import { IfcAPI } from "web-ifc";
 import * as CUI from "@thatopen/ui-obc";
 import { FragmentsGroup } from "@thatopen/fragments"
+import { ToDosManager } from "../bim-components/TodoCreator"
 
 
 interface Props {
@@ -154,6 +155,9 @@ export function IFCViewer(props: Props) {
       rendererComponent.resize()
       cameraComponent.updateAspect()
     })
+
+    const todosManager = components.get(ToDosManager)
+    todosManager.world = world
   }
 
   //Now we'll create a function that will stream the given model. We will also allow to stream the properties optionally. 

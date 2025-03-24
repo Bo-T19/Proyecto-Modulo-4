@@ -40,12 +40,14 @@ export function ToDoList(props: Props) {
         event.stopImmediatePropagation()
         const { row } = event.detail
         row.addEventListener("click", () => {
-            const fragments = components.get(OBC.FragmentsManager)
-            const guids = toDosManager.getTaskById(row.data.Id, projectId)?.ifcGuids
-            if (guids) {
-                const fragmentIdMap = fragments.guidToFragmentIdMap(guids)
-                const highlighter = components.get(OBCF.Highlighter)
-                highlighter.highlightByID("select", fragmentIdMap, true, false)
+            const todo = toDosManager.getTaskById(row.data.Id, projectId)
+            const ifcGuids = todo?.ifcGuids
+            const todoCamera = todo?.camera
+            console.log(todoCamera)
+            console.log(todo)
+            if (ifcGuids && todoCamera)
+            {
+                toDosManager.highlightToDo(ifcGuids, todoCamera)
             }
 
         })
