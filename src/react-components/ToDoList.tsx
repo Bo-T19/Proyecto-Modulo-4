@@ -63,7 +63,7 @@ export function ToDoList(props: Props) {
         `
     );
 
-
+    tasksTable.expanded = false
     //SearchBox
     const inputBox = BUI.Component.create<BUI.TextInput>(() => {
         return BUI.html`

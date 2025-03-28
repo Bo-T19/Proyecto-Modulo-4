@@ -300,6 +300,12 @@ export function IFCViewer(props: Props) {
         fragmentIdMap: {},
       })
 
+      const qtosTable = BUI.Component.create<BUI.Table>(() =>
+        BUI.html`
+         <bim-table id="qtos-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
+        `
+      );
+
       const highlighter = components.get(OBCF.Highlighter)
       highlighter.events.select.onHighlight.add(async (fragmentIdMap) => {
         if (!floatingGrid) return
@@ -312,19 +318,17 @@ export function IFCViewer(props: Props) {
         const simpleQto = components.get(SimpleQTO)
         await simpleQto.sumQuantities(fragmentIdMap)
 
-        const qtosTable = document.getElementById("qtos-table") as BUI.Table
-        if(qtosTable)
-        {
-          qtosTable.data = simpleQto.convertQtoSum()
-        }
+        qtosTable.data = simpleQto.convertQtoSum()
+
+        qtosTable.expanded = false
+
       })
 
       highlighter.events.select.onClear.add(() => {
         const simpleQto = components.get(SimpleQTO)
         simpleQto.qtoResult = {}
         const qtosTable = document.getElementById("qtos-table") as BUI.Table
-        if(qtosTable)
-        {
+        if (qtosTable) {
           qtosTable.data = simpleQto.convertQtoSum()
         }
         updatePropsTable({ fragmentIdMap: {} })
@@ -348,6 +352,14 @@ export function IFCViewer(props: Props) {
             <bim-text-input @input=${search} placeholder="Search..."></bim-text-input>
             ${propsTable}  
           </bim-panel-section>
+          <bim-panel-section
+            name="quantities"
+            label="Quantities"
+            icon="material-symbols:summarize"
+            fixed
+          >
+            ${qtosTable}  
+          </bim-panel-section>
         </bim-panel>
       `;
     })
@@ -355,7 +367,7 @@ export function IFCViewer(props: Props) {
 
     //Classifications panel
     const classifierPanel = BUI.Component.create<BUI.Panel>(() => {
-      return BUI.html `
+      return BUI.html`
       <bim-panel>
           <bim-panel-section
               name="classifier"
@@ -387,6 +399,12 @@ export function IFCViewer(props: Props) {
       } else {
         floatingGrid.layout = "main"
       }
+    }
+
+    const onDownloadQuantities =()=>
+    {
+      const simpleQto = components.get(SimpleQTO)
+      simpleQto.exportToJSON()
     }
     //Toolbar
     const toolbar = BUI.Component.create<BUI.Toolbar>(() => {
@@ -426,6 +444,12 @@ export function IFCViewer(props: Props) {
               label="Show Properties"
               icon="material-symbols:event-list"
               @click=${() => { onShowPropertiesAndQtos() }}
+              >
+              </bim-button>
+              <bim-button
+              label="Download Quantities"
+              icon="material-symbols:sim-card-download"
+              @click=${() => { onDownloadQuantities() }}
               >
               </bim-button>
               </bim-toolbar-section>
@@ -485,12 +509,11 @@ export function IFCViewer(props: Props) {
     return () => {
 
       const viewerContainer = document.getElementById("viewer-container") as HTMLElement
-      const floatingGrid= document.getElementById("floating-grid") as HTMLElement;
-      const viewerContainerHTML =  viewerContainer as HTMLElement
-      const floatingGridHTML= floatingGrid as HTMLElement;
+      const floatingGrid = document.getElementById("floating-grid") as HTMLElement;
+      const viewerContainerHTML = viewerContainer as HTMLElement
+      const floatingGridHTML = floatingGrid as HTMLElement;
 
-      if(viewerContainer && floatingGrid)
-      {
+      if (viewerContainer && floatingGrid) {
         viewerContainerHTML.removeChild(floatingGridHTML)
       }
       if (components) {

@@ -10,7 +10,6 @@ import * as BUI from "@thatopen/ui";
 import { deleteDocument } from "../firebase";
 import { ShowModelsWindow } from "./ShowModelsWindow";
 import { ModelsManagementTable } from "./ModelsManagementTable";
-import { qtoTool } from "../bim-components/SimpleQTO/src/Template"
 import { todoTool } from "../bim-components/TodoCreator";
 
 interface Props {
@@ -32,14 +31,6 @@ export function ProjectModelsPage(props: Props) {
     const [showShowModels, setShowModels] = React.useState(false)
     const [showNewToDoForm, setNewToDoForm] = React.useState(false)
     const [showEditToDoForm, setEditToDoForm] = React.useState(false)
-
-    //References and qtos table
-    const qtosTableContainer = React.useRef<HTMLDivElement>(null)
-    const qtosTable = BUI.Component.create<BUI.Table>(() =>
-        BUI.html`
-                <bim-table id="qtos-table" style="background-color: #f1f2f4; border-radius: 8px;"></bim-table>
-            `
-    );
 
     //NewToDoForm
     const onNewToDoClick = () => {
@@ -73,9 +64,6 @@ export function ProjectModelsPage(props: Props) {
         setShowModels(true)
     }
 
-    React.useEffect(() => {
-        qtosTableContainer.current?.appendChild(qtosTable)
-    }, [])
 
     React.useEffect(() => {
         if (showShowModels) {
@@ -151,19 +139,6 @@ export function ProjectModelsPage(props: Props) {
                         overflowY: "auto",
                         height: "50%"
                     }}>
-                    <div
-                        style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            padding: "10px 10px",
-                            rowGap: 20,
-                            overflowY: "auto",
-                            height: "fit-content"
-                        }}
-                    >
-                        {<div ref={qtosTableContainer}></div>}
-
-                    </div>
                 </div>
             </div>
             <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />

@@ -19,7 +19,10 @@ export class SimpleQTO extends OBC.Component implements OBC.Disposable {
         console.time("QTO V2")
         const fragmentManager = this.components.get(OBC.FragmentsManager)
         const modelIdMap = fragmentManager.getModelIdMap(fragmentIdMap)
+        const processedModels = new Set<string>();
         for (const modelId in modelIdMap) {
+            if (processedModels.has(modelId)) continue; 
+            processedModels.add(modelId); 
             const model = fragmentManager.groups.get(modelId)
             if (!model) continue
             if (!model.hasProperties) { return }
@@ -53,22 +56,40 @@ export class SimpleQTO extends OBC.Component implements OBC.Disposable {
         console.timeEnd("QTO V2")
     }
 
+    //Export a quantities to JSON
+
+    exportToJSON(fileName: string = "quantities") {
+        const json = JSON.stringify(this.qtoResult, null, 2)
+        const blob = new Blob([json], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = fileName
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
     convertQtoSum() {
 
-    const result = Object.entries(this.qtoResult).map(([setName, quantities]) => ({
-        data: {
-            Name: setName,
-            Description: `Quantities for ${setName}`,
-        },
-        children: Object.entries(quantities).map(([qtoName, value]) => ({
-            data: {
-                Name: qtoName,
-                Quantity: value,
-            }
-        }))
-    }));
+        const result = Object.keys(this.qtoResult).map(setName => {
+            const setData = this.qtoResult[setName];
+            return {
+                data: { Name: setName },
+                children: setData
+                    ? Object.keys(setData).map(qtoName => ({
+                        data: {
+                            Name: qtoName,
+                            Quantity: setData[qtoName],
+                        }
+                    }))
+                    : ["data"]
+            };
+        });
 
-    return result
-}
-  async dispose() { }
+        console.log("Final result:", result);
+        return result;
+    }
+
+
+    async dispose() { }
 }
