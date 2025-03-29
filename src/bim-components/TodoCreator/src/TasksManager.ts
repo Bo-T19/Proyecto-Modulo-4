@@ -68,7 +68,6 @@ export class ToDosManager extends OBC.Component implements OBC.Disposable {
             for (const todo of project.toDosList) {
                 const fragments = this.components.get(OBC.FragmentsManager)
                 const fragmentIdMap = fragments.guidToFragmentIdMap(todo.ifcGuids)
-                console.log(todo.status)
                 highlighter.highlightByID(`${ToDosManager.uuid}-status-${todo.status}`, fragmentIdMap, false, false)
             }
         } else {

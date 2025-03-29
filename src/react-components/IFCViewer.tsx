@@ -311,15 +311,13 @@ export function IFCViewer(props: Props) {
         if (!floatingGrid) return
         floatingGrid.layout = "second"
 
-        console.log
         updatePropsTable({ fragmentIdMap })
         propsTable.expanded = false
 
         const simpleQto = components.get(SimpleQTO)
         await simpleQto.sumQuantities(fragmentIdMap)
 
-        qtosTable.data = simpleQto.convertQtoSum()
-
+        qtosTable.data = simpleQto.qtosTableData
         qtosTable.expanded = false
 
       })
@@ -327,9 +325,10 @@ export function IFCViewer(props: Props) {
       highlighter.events.select.onClear.add(() => {
         const simpleQto = components.get(SimpleQTO)
         simpleQto.qtoResult = {}
+        simpleQto.qtosTableData = []
         const qtosTable = document.getElementById("qtos-table") as BUI.Table
         if (qtosTable) {
-          qtosTable.data = simpleQto.convertQtoSum()
+          qtosTable.data = simpleQto.qtosTableData
         }
         updatePropsTable({ fragmentIdMap: {} })
         if (!floatingGrid) return

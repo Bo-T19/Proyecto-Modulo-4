@@ -43,8 +43,6 @@ export function ToDoList(props: Props) {
             const todo = toDosManager.getTaskById(row.data.Id, projectId)
             const ifcGuids = todo?.ifcGuids
             const todoCamera = todo?.camera
-            console.log(todoCamera)
-            console.log(todo)
             if (ifcGuids && todoCamera) {
                 toDosManager.highlightToDo(ifcGuids, todoCamera)
             }

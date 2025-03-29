@@ -27,7 +27,6 @@ export class ToDo implements TodoData{
             this[key] = data[key]
         }
 
-        console.log(data)
         this.id =uuidv4()
         this.setColor()
     }

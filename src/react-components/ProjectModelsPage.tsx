@@ -133,13 +133,6 @@ export function ProjectModelsPage(props: Props) {
                 }}>
                     <ToDoList project={project} onOpenNewForm={onNewToDoClick} onOpenEditForm={onEditToDoClick} components={components} projectsManager={props.projectsManager} modelsPage={true} />
                 </div>
-                <div className="dashboard-card"
-                    style={{
-                        flexGrow: 1,
-                        overflowY: "auto",
-                        height: "50%"
-                    }}>
-                </div>
             </div>
             <IFCViewer project={project} projectsManager={props.projectsManager} components={components} />
         </div>

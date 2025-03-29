@@ -259,7 +259,6 @@ export function ModelsManagementTable(props: Props) {
 
         props.projectsManager.editModelDictionary(props.project, filePath, "Shown")
 
-        console.log(props.project.modelDictionaryVersion)
         await updateDocument("/projects", props.project.id, {
             modelDictionary: props.project.modelDictionary
         })
